@@ -5,6 +5,7 @@ import android.speech.tts.Voice
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.answersolutions.runandread.data.model.Book
+import com.answersolutions.runandread.data.model.Bookmark
 import com.answersolutions.runandread.data.repository.LibraryRepository
 import com.answersolutions.runandread.data.model.EBookFile
 import com.answersolutions.runandread.voice.SpeechProvider
@@ -166,7 +167,7 @@ class BookSettingsViewModel @Inject constructor(
                         text = contextText(),
                         lastPosition = 0,
                         created = System.currentTimeMillis(),
-                        bookmarks = emptyList(),
+                        bookmarks = emptyList<Bookmark>().toMutableList(),
                     )
                     repository.addBook(book)
                     repository.selectBook(book.id)

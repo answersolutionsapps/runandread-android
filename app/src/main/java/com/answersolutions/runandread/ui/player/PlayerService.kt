@@ -4,11 +4,15 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
-import android.graphics.drawable.Icon
 import android.os.Build
+import android.os.Bundle
 import android.os.IBinder
+import android.os.ResultReceiver
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationCompat
 import com.answersolutions.runandread.R
 
@@ -20,6 +24,7 @@ class PlayerService : Service() {
         const val ACTION_PAUSE = "com.answersolutions.runandread.ACTION_PAUSE"
         const val ACTION_FF = "com.answersolutions.runandread.ACTION_FF"
         const val ACTION_FR = "com.answersolutions.runandread.ACTION_FR"
+        const val ACTION_FAVORITE = "com.answersolutions.runandread.ACTION_FAVORITE"
         const val ACTION_SERVICE_STOP = "com.answersolutions.runandread.ACTION_SERVICE_STOP"
         const val NOTIFICATION_ID = 1
         const val CHANNEL_ID = "audio_channel"
@@ -28,21 +33,38 @@ class PlayerService : Service() {
 
     private lateinit var mediaSession: MediaSessionCompat
 
-
-    override fun onCreate() {
-        super.onCreate()
-
-//        playerViewModel = ViewModelProvider(
-//            application as ViewModelStoreOwner, viewModelFactory
-//        )[PlayerViewModel::class.java]
-
-        mediaSession = MediaSessionCompat(this, "PlayerService").apply {
-            setFlags(MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS)
+    fun initMediaSession(context: Context) {
+        mediaSession = MediaSessionCompat(context, "TTSPlaybackSession").apply {
+            setFlags(
+                MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS or
+                        MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
+            )
+            setPlaybackState(
+                PlaybackStateCompat.Builder()
+                    .setActions(
+                        PlaybackStateCompat.ACTION_PLAY or
+                                PlaybackStateCompat.ACTION_PAUSE or
+                                PlaybackStateCompat.ACTION_STOP or
+                                PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+                    )
+                    .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1f)
+                    .build()
+            )
             setCallback(mediaSessionCallback)
             isActive = true
         }
+    }
 
+
+    override fun onCreate() {
+        super.onCreate()
+        initMediaSession(this)
         createNotificationChannel()
+
+        playerViewModel?.playbackProgressCallBack = { position, duration, isPlaying ->
+            updatePlaybackState(position = position, duration = duration, isPlaying)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -51,6 +73,10 @@ class PlayerService : Service() {
             ACTION_PAUSE -> mediaSessionCallback.onPause()
             ACTION_FF -> mediaSessionCallback.onFastForward()
             ACTION_FR -> mediaSessionCallback.onRewind()
+            ACTION_FAVORITE -> {
+                mediaSessionCallback.onCommand(command = null, extras = null, cb = null)
+            }
+
             ACTION_SERVICE_STOP -> stopSelf()
         }
         return START_STICKY
@@ -70,69 +96,92 @@ class PlayerService : Service() {
         }
 
         override fun onFastForward() {
-//            super.onFastForward()
             playerViewModel?.fastForward()
 
         }
 
         override fun onRewind() {
-//            super.onRewind()
             playerViewModel?.fastRewind()
+        }
+
+        override fun onCommand(command: String?, extras: Bundle?, cb: ResultReceiver?) {
+            super.onCommand(command, extras, cb)
+            playerViewModel?.saveBookmark()
         }
 
     }
 
+    private fun updatePlaybackState(position: Long, duration: Long, isPlaying: Boolean) {
+        val state = if (isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
+
+        mediaSession.setPlaybackState(
+            PlaybackStateCompat.Builder()
+                .setState(state, position, 1f) // Position updates
+                .setBufferedPosition(duration)
+                .setActions(
+                    PlaybackStateCompat.ACTION_PLAY or
+                            PlaybackStateCompat.ACTION_PAUSE or
+                            PlaybackStateCompat.ACTION_FAST_FORWARD or
+                            PlaybackStateCompat.ACTION_REWIND or
+                            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
+                            PlaybackStateCompat.ACTION_SEEK_TO
+                )
+                .build()
+        )
+
+        mediaSession.setExtras(Bundle().apply {
+            putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
+        })
+
+        mediaSession.isActive = true // Ensure it's active!
+    }
+
     private fun updateNotification(isPlaying: Boolean) {
-
         playerViewModel?.selectedBook?.let {
-            val playIntent = PendingIntent.getService(
-                this, 0, Intent(this, PlayerService::class.java).setAction(ACTION_PLAY),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-
-            val pauseIntent = PendingIntent.getService(
-                this, 0, Intent(this, PlayerService::class.java).setAction(ACTION_PAUSE),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-
-            val ffIntent = PendingIntent.getService(
-                this, 0, Intent(this, PlayerService::class.java).setAction(ACTION_FF),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-
-            val frIntent = PendingIntent.getService(
-                this, 0, Intent(this, PlayerService::class.java).setAction(ACTION_FR),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
+            val playIntent = getServiceIntent(ACTION_PLAY, 1)
+            val pauseIntent = getServiceIntent(ACTION_PAUSE, 2)
+            val ffIntent = getServiceIntent(ACTION_FF, 3)
+            val frIntent = getServiceIntent(ACTION_FR, 4)
+            val favoriteIntent = getServiceIntent(ACTION_FAVORITE, 5)
 
             val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-                .setLargeIcon(Icon.createWithResource(this, R.drawable.ic_launcher_foreground))
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle(it.title)
                 .setContentText(it.author)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setOngoing(true) // Keeps the notification visible
                 .setStyle(
                     androidx.media.app.NotificationCompat.MediaStyle()
                         .setMediaSession(mediaSession.sessionToken)
-                        .setShowActionsInCompactView(0, 1, 2)
+                        .setShowActionsInCompactView(1, 2, 3) // Shows Play/Pause, FF, FR
                 )
                 .apply {
-                    addAction(R.drawable.ic_fr, "Fast Rewind", frIntent)
-                    addAction(R.drawable.ic_ff, "Fast Forward", ffIntent)
-
                     if (isPlaying) {
                         addAction(R.drawable.ic_pause, "Pause", pauseIntent)
                     } else {
                         addAction(R.drawable.ic_play, "Play", playIntent)
                     }
                 }
+                .addAction(R.drawable.ic_bookmark, "Favorite", favoriteIntent)
+                .addAction(R.drawable.ic_fr, "Rewind", frIntent)
+                .addAction(R.drawable.ic_ff, "Fast Forward", ffIntent)
+
                 .build()
 
             startForeground(NOTIFICATION_ID, notification)
         }
     }
+
+    private fun getServiceIntent(action: String, requestCode: Int): PendingIntent {
+        return PendingIntent.getService(
+            this, requestCode, Intent(this, PlayerService::class.java).setAction(action),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

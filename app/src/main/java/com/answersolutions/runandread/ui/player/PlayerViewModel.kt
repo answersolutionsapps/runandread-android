@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.answersolutions.extensions.formatSecondsToHMS
 import com.answersolutions.runandread.data.model.Book
 import com.answersolutions.runandread.data.model.Book.Companion.SECONDS_PER_CHARACTER
+import com.answersolutions.runandread.data.model.Bookmark
 import com.answersolutions.runandread.data.repository.LibraryRepository
 import com.answersolutions.runandread.data.repository.VoiceRepository
 import com.answersolutions.runandread.voice.SpeakingCallBack
@@ -15,12 +16,16 @@ import com.answersolutions.runandread.voice.SpeechProvider
 import com.answersolutions.runandread.voice.toVoice
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 import javax.inject.Inject
+import kotlin.math.max
+import kotlin.math.min
 
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
@@ -34,11 +39,13 @@ class PlayerViewModel @Inject constructor(
         private const val SEEK_STEP = 60
     }
 
-    lateinit var selectedBook: Book
+    var selectedBook: Book? = null
 
     fun saveBookChanges() {
         viewModelScope.launch {
-            libraryRepository.updateBook(selectedBook)
+            selectedBook?.let {
+                libraryRepository.updateBook(it)
+            }
         }
     }
 
@@ -50,50 +57,75 @@ class PlayerViewModel @Inject constructor(
     private var currentFrame = listOf<String>()
     private var currentWordIndexInFrame = 0
     private var totalWords: Int = 0
+    private var totalTim: Double = 0.0
 
     data class PlayerUIState(
         val isSpeaking: Boolean = false,
         val spokenTextRange: IntRange = 0..0,
         val progress: Float = 0f,
         val progressTime: String = "00:00",
-        val totalTimeString: String = "00:00"
+        val totalTimeString: String = "00:00",
+        val bookmarks: List<Bookmark> = emptyList()
     )
 
     private val _state = MutableStateFlow(PlayerUIState())
     val viewState: StateFlow<PlayerUIState> get() = _state.asStateFlow()
 
-    fun setUpBook(book: Book) {
+    fun setUpBook() {
         viewModelScope.launch {
-            selectedBook = book
+            selectedBook = withContext(Dispatchers.IO) {
+                libraryRepository.getSelectedBook()!!
+            }
 
-            val selectedLanguage = Locale(book.language)
-            val voice = repository.nameToVoice(book.voiceIdentifier, book.language)
-            words = book.text.flatMap { it.split("\\s+".toRegex()) }
-                .mapNotNull { it.takeIf { it.isNotEmpty() } }
+            selectedBook?.let { book ->
+                val selectedLanguage = Locale(book.language)
+                val voice = repository.nameToVoice(book.voiceIdentifier, book.language)
+                words = book.text.flatMap { it.split("\\s+".toRegex()) }
+                    .mapNotNull { it.takeIf { it.isNotEmpty() } }
 
-            totalWords = words.size
-            currentWordIndexInFrame = 0
-//            selectedVoice = voice.toVoice()
-//            selectedLocale = selectedLanguage
-            selectedSpeechRate = book.voiceRate
+                totalWords = words.size
+                currentWordIndexInFrame = 0
+                selectedSpeechRate = book.voiceRate
 
-            val secondsElapsed = calculateElapsedTime(totalWords - 1)
-            _state.value = _state.value.copy(
-                totalTimeString = secondsElapsed.formatSecondsToHMS()
-            )
-            updatePosition(book.lastPosition.toFloat())
+                totalTim = calculateElapsedTime(totalWords - 1)
 
-//            safeLet(selectedLocale, selectedVoice) { l, v ->
-            textToSpeech = SpeechProvider(
-                application,
-                currentLocale = selectedLanguage,
-                currentVoice = voice.toVoice(),
-                speechRate = selectedSpeechRate,
-                callBack = speechRangeCallBack,
-                speakingCallBack = speakingCallBack
-            )
-//            }
+                withContext(Dispatchers.Main) {
+                    _state.value = _state.value.copy(
+                        totalTimeString = totalTim.formatSecondsToHMS(),
+                        bookmarks = book.bookmarks.map {
+                            it.title = titleForBookmark(it.position); it
+                        }
+                    )
+                    updatePosition(book.lastPosition.toFloat())
+                    textToSpeech = SpeechProvider(
+                        application,
+                        currentLocale = selectedLanguage,
+                        currentVoice = voice.toVoice(),
+                        speechRate = selectedSpeechRate,
+                        callBack = speechRangeCallBack,
+                        speakingCallBack = speakingCallBack
+                    )
+                }
+            }
         }
+    }
+
+    private fun titleForBookmark(position: Int): String {
+        val from = max(0, position - 5)
+        val to = min(words.size - 1, position + 10)
+
+        if (to <= words.size && words.isNotEmpty()) {
+            val t = words.subList(from, to)
+            return t.joinToString(" ")
+        } else {
+            return "Unknown Bookmark"
+        }
+    }
+
+    fun playFromBookmark(position: Int) {
+        textToSpeech.stop()
+        updatePosition(position.toFloat())
+        speak()
     }
 
     fun sliderRange(): ClosedFloatingPointRange<Float> {
@@ -134,7 +166,25 @@ class PlayerViewModel @Inject constructor(
                 progress = currentWordIndex.toFloat(),
                 progressTime = secondsElapsed.formatSecondsToHMS()
             )
-            selectedBook = selectedBook.copy(lastPosition = currentWordIndex)
+            selectedBook = selectedBook?.copy(lastPosition = currentWordIndex)
+            playbackProgressCallBack(
+                secondsElapsed.toLong() * 1000,
+                totalTim.toLong() * 1000,
+                isSpeaking()
+            )
+        }
+    }
+
+    fun saveBookmark() {
+        viewModelScope.launch {
+            selectedBook?.bookmarks?.add(Bookmark(currentWordIndex))
+            _state.value = _state.value.copy(
+                bookmarks = selectedBook?.bookmarks?.map {
+                    if (it.title.isEmpty()) {
+                        it.title = titleForBookmark(it.position)
+                    }; it
+                } ?: emptyList()
+            )
         }
     }
 
@@ -153,7 +203,7 @@ class PlayerViewModel @Inject constructor(
             currentWordIndexInFrame = 0
             currentFrame = emptyList()
             updateProgress()
-            selectedBook = selectedBook.copy(lastPosition = currentWordIndex)
+            selectedBook = selectedBook?.copy(lastPosition = currentWordIndex)
         }
     }
 
@@ -215,5 +265,7 @@ class PlayerViewModel @Inject constructor(
         ).setAction(PlayerService.ACTION_SERVICE_STOP)
         application.startService(intent)
     }
+
+    var playbackProgressCallBack: (Long, Long, Boolean) -> Unit = { _, _, _ -> }
 
 }

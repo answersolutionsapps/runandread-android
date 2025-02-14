@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
                         SplashScreenView(onNavigate = { screen ->
                             libraryViewModel.selectedBook.value?.let {
                                 //todo: do not pass book, rather load it in viewmodel by repository
-                                playerViewModel.setUpBook(it)
+//                                playerViewModel.setUpBook(it)
                             }
                             navigationViewModel.navigateTo(screen)
                         }, libraryViewModel)
@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
                             onSelect = { book ->
                                 libraryViewModel.onSelectBook(book)
                                 //todo: do not pass book, rather load it in viewmodel by repository
-                                playerViewModel.setUpBook(book)
+//                                playerViewModel.setUpBook(book)
                                 navigationViewModel.navigateTo(Screen.Player)
                             },
                             onAboutClicked = {
@@ -98,7 +98,7 @@ class MainActivity : ComponentActivity() {
                                 } else {
                                     libraryViewModel.onSelectBook(book)
                                     //todo: do not pass book, rather load it in viewmodel by repository
-                                    playerViewModel.setUpBook(book)
+//                                    playerViewModel.setUpBook(book)
                                     navigationViewModel.navigateTo(Screen.Player)
                                 }
                             },

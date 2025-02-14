@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.FastForward
@@ -26,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -38,6 +41,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.answersolutions.runandread.data.model.Book
+import com.answersolutions.runandread.data.model.Bookmark
 import com.answersolutions.runandread.ui.components.NiceRoundButton
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 import com.answersolutions.runandread.ui.theme.doubleLargeSpace
@@ -50,6 +54,7 @@ import com.answersolutions.runandread.ui.theme.smallSpace
 fun PlayerScreenPreview() {
     RunAndReadTheme(darkTheme = true) {
         PlayerScreenContent(selectedBook = Book.stab().first(),
+            bookmarks = listOf(Bookmark(1, "Test 1"), Bookmark(2, "Test 2"), Bookmark(3, "Test 3")),
             isSpeaking = true,
             progressTime = "00:00",
             progress = 100f,
@@ -64,6 +69,9 @@ fun PlayerScreenPreview() {
             onAddBookmark = {},
             onBackToLibrary = {
             }, onSettings = {
+            },
+            onBookmarkClick = { position ->
+
             })
     }
 }
@@ -75,15 +83,23 @@ fun PlayerScreenView(
     viewModel: PlayerViewModel,
     onPlayback: (Float) -> Unit
 ) {
+
+    LaunchedEffect(Unit) {
+        viewModel.setUpBook()
+    }
+
     val uiState = viewModel.viewState.collectAsState()
     val isSpeaking = uiState.value.isSpeaking
     val progress = uiState.value.progress
     val progressTime = uiState.value.progressTime
     val totalTimeString = uiState.value.totalTimeString
     val spokenTextRange = uiState.value.spokenTextRange
+    val bookmarks = uiState.value.bookmarks
+
 
     PlayerScreenContent(
         selectedBook = viewModel.selectedBook,
+        bookmarks = bookmarks,
         isSpeaking = isSpeaking,
         progressTime = progressTime,
         progress = progress,
@@ -106,9 +122,14 @@ fun PlayerScreenView(
         onFastRewind = {
             viewModel.fastRewind()
         },
-        onAddBookmark = {},
+        onAddBookmark = { viewModel.saveBookmark() },
         onBackToLibrary = onBackToLibrary,
-        onSettings = {onSettings(viewModel.selectedBook)}
+        onSettings = {
+            viewModel.selectedBook?.let(onSettings)
+        },
+        onBookmarkClick = { position ->
+            viewModel.playFromBookmark(position.toInt())
+        }
     )
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -143,6 +164,7 @@ fun PlayerScreenView(
 @Composable
 fun PlayerScreenContent(
     selectedBook: Book?,
+    bookmarks: List<Bookmark>,
     isSpeaking: Boolean,
     progressTime: String,
     progress: Float,
@@ -154,7 +176,8 @@ fun PlayerScreenContent(
     onFastRewind: () -> Unit,
     onAddBookmark: () -> Unit,
     onBackToLibrary: () -> Unit,
-    onSettings: () -> Unit
+    onSettings: () -> Unit,
+    onBookmarkClick: (position: Float) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -188,6 +211,31 @@ fun PlayerScreenContent(
                     .fillMaxSize()
                     .padding(padding)
             ) {
+                if (bookmarks.isNotEmpty()) {
+                    Column(modifier = Modifier.padding(horizontal = largeSpace)) {
+                        LazyColumn {
+                            items(bookmarks) { bookMark ->
+                                Text(
+                                    text = bookMark.title,
+                                    maxLines = 2,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+
+                                        .padding(horizontal = 8.dp, vertical = 8.dp)
+                                        .clickable {
+                                            onBookmarkClick(
+                                                bookMark.position.toFloat()
+                                            )
+                                        }
+                                )
+                                HorizontalDivider()
+                            }
+                        }
+                    }
+
+                }
+
                 Spacer(modifier = Modifier.weight(1f))
                 HorizontalDivider()
                 selectedBook?.let {

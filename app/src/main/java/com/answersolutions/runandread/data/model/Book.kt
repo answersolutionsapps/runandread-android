@@ -15,8 +15,8 @@ import java.util.*
 
 @Serializable
 data class Bookmark(
-    val voiceRate: Float,
-    val position: Int
+    val position: Int,
+    var title: String = ""
 )
 
 
@@ -31,7 +31,7 @@ data class Book(
     val text: List<String>,
     val lastPosition: Int,
     val created: Long,
-    val bookmarks: List<Bookmark> = emptyList()
+    val bookmarks: MutableList<Bookmark> = emptyList<Bookmark>().toMutableList()
 ) {
 
     data class BookUIState(
@@ -89,7 +89,7 @@ data class Book(
             text: List<String>? = null,
             lastPosition: Int? = null,
             created: Long? = null,
-            bookmarks: List<Bookmark>? = null,
+            bookmarks: MutableList<Bookmark>? = null,
         ): Book {
             return Book(
                 id = data.id,
