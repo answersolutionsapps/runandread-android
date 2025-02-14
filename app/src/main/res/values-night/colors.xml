@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#FFD6D6D6</color>
+    <color name="surface">#FF252525</color>
+
+    <color name="text_launcher">#FFebebeb</color>
+    <color name="background_launcher">#FF000000</color>
+</resources>

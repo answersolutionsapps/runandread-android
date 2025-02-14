@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources >
+    <style name="Theme.RunAndRead" parent="android:Theme.Material.Light.NoActionBar" >
+        <item name="colorPrimary">@color/primary</item>
+        <item name="android:statusBarColor" >@color/primary</item>
+<!--        <item name="android:windowDisablePreview">false</item>-->
+        <item name="android:windowBackground">@color/background_launcher</item>
+    </style>
+
+    <style name="Theme.RunAndRead.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowIsTranslucent">true</item>
+<!--        <item name="android:windowBackground">@android:color/transparent</item>-->
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowBackground">@color/background_launcher</item>
+<!--        <item name="android:windowDisablePreview">false</item>-->
+    </style>
+
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Set the splash screen background, animated icon, and animation
+        duration. -->
+        <item name="windowSplashScreenBackground">@color/background_launcher</item>
+
+        <!-- Use windowSplashScreenAnimatedIcon to add a drawable or an animated
+             drawable. One of these is required. -->
+        <!--        <item name="windowSplashScreenAnimatedIcon">@drawable/...</item>-->
+        <!-- Required for animated icons. -->
+        <item name="windowSplashScreenAnimationDuration">200</item>
+
+        <!-- Set the theme of the Activity that directly follows your splash
+        screen. This is required. -->
+        <item name="postSplashScreenTheme">@style/Theme.RunAndRead</item>
+    </style>
+</resources>
