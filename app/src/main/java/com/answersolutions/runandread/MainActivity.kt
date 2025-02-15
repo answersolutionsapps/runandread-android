@@ -23,7 +23,6 @@ import com.answersolutions.runandread.ui.settings.BookSettingsViewModel
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 import com.answersolutions.runandread.voice.VoiceSelectorViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import timber.log.Timber
 
 sealed class Screen(val route: String) {
     data object Splash : Screen("init")
@@ -65,10 +64,6 @@ class MainActivity : ComponentActivity() {
                 NavHost(navController, startDestination = Screen.Splash.route) {
                     composable(Screen.Splash.route) {
                         SplashScreenView(onNavigate = { screen ->
-                            libraryViewModel.selectedBook.value?.let {
-                                //todo: do not pass book, rather load it in viewmodel by repository
-//                                playerViewModel.setUpBook(it)
-                            }
                             navigationViewModel.navigateTo(screen)
                         }, libraryViewModel)
                     }
@@ -77,8 +72,6 @@ class MainActivity : ComponentActivity() {
                             viewModel = libraryViewModel,
                             onSelect = { book ->
                                 libraryViewModel.onSelectBook(book)
-                                //todo: do not pass book, rather load it in viewmodel by repository
-//                                playerViewModel.setUpBook(book)
                                 navigationViewModel.navigateTo(Screen.Player)
                             },
                             onAboutClicked = {
@@ -97,8 +90,6 @@ class MainActivity : ComponentActivity() {
                                     navigationViewModel.popBack()
                                 } else {
                                     libraryViewModel.onSelectBook(book)
-                                    //todo: do not pass book, rather load it in viewmodel by repository
-//                                    playerViewModel.setUpBook(book)
                                     navigationViewModel.navigateTo(Screen.Player)
                                 }
                             },

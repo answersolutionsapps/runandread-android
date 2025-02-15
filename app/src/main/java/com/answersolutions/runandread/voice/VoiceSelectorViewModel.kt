@@ -14,10 +14,15 @@ import timber.log.Timber
 import java.util.Locale
 import javax.inject.Inject
 
+
+fun Locale.languageId(): String {
+    return "${this.language}_${this.country}"
+}
+
 fun Voice.toRunAndReadVoice(): RunAndReadVoice {
     return RunAndReadVoice(
         name,
-        locale.language,
+        locale.languageId(),
         locale,
         quality,
         latency,
@@ -30,10 +35,28 @@ fun RunAndReadVoice.toVoice(): Voice {
     return Voice(name, locale, quality, latency, requiresNetworkConnection, features)
 }
 
+fun RunAndReadVoice.toLocale(): Locale {
+    return language.toLocale()
+}
+
+fun RunAndReadVoice.isVoiceNotInstalled(): Boolean {
+    return features?.contains("notInstalled") != true
+}
+
+fun String.toLocale(): Locale {
+    val parts = this.split("_")
+    return when (parts.size) {
+        1 -> Locale(parts[0]) // Only language (e.g., "en")
+        2 -> Locale(parts[0], parts[1]) // Language and country (e.g., "en", "US")
+        3 -> Locale(parts[0], parts[1], parts[2]) // Language, country, and variant
+        else -> Locale.getDefault() // Fallback to device default
+    }
+}
+
 data class RunAndReadVoice(
     val name: String,
     val language: String,
-    val locale: Locale = Locale(language),
+    val locale: Locale = language.toLocale(),
     val quality: Int = 0,
     val latency: Int = 0,
     val requiresNetworkConnection: Boolean = false,
@@ -74,13 +97,13 @@ class VoiceSelectorViewModel @Inject constructor(
         return repository.nameToVoice(name, language)
     }
 
-    fun localeToVoice(locale: Locale): RunAndReadVoice {
-        return repository.localeToVoice(locale)
-    }
-
-    fun languageToLocale(language: String): Locale {
-        return repository.languageToLocale(language)
-    }
+//    fun localeToVoice(locale: Locale): RunAndReadVoice {
+//        return repository.localeToVoice(locale)
+//    }
+//
+//    fun languageToLocale(language: String): Locale {
+//        return repository.languageToLocale(language)
+//    }
 
 
 //    var availableLocales: Set<Locale> = setOf()

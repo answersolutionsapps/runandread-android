@@ -8,42 +8,26 @@ import android.speech.tts.Voice
 import timber.log.Timber
 import java.util.*
 
-interface SpeakingCallBack {
-    fun onStart()
-    fun onStop()
-    fun onDone()
+interface SimpleSpeakingCallBack {
     fun onError(utteranceId: String?, errorCode: Int)
 }
 
-class SpeechProvider(
+class SimpleSpeechProvider(
     private val context: Context,
     private var currentLocale: Locale = Locale.getDefault(),
     private var currentVoice: Voice,
     private var speechRate: Float = 1.0f,
-    private val callBack: (range: IntRange) -> Unit,
-    private val speakingCallBack: SpeakingCallBack?
+    private val speakingCallBack: SimpleSpeakingCallBack?
 ) {
 
     private val speechListener = object : UtteranceProgressListener() {
         override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
-            Timber.d("textToSpeech=>utteranceId=>$utteranceId")
-            Timber.d("textToSpeech=>frame=>$frame")
-            spokenTextRange = start..end
-
-            callBack(spokenTextRange)
-
-            Timber.d("textToSpeech=>range=>$start; $end")
         }
 
         override fun onStart(utteranceId: String?) {
-            Timber.d("textToSpeech=> onStart")
-            speakingCallBack?.onStart()
         }
 
         override fun onDone(utteranceId: String?) {
-            Timber.d("textToSpeech=> onDone")
-            spokenTextRange = 0..0
-            speakingCallBack?.onDone()
         }
 
         @Deprecated(
@@ -52,28 +36,20 @@ class SpeechProvider(
         )
         override fun onError(p0: String?) {
             Timber.d("textToSpeech=> onError=>$p0")
-            speakingCallBack?.onStop()
+            speakingCallBack?.onError(null, 0)
         }
 
         override fun onError(utteranceId: String?, errorCode: Int) {
             super.onError(utteranceId, errorCode)
-            Timber.d("textToSpeech=> onError=>$errorCode")
-            if (errorCode == TextToSpeech.ERROR_NETWORK_TIMEOUT || errorCode == TextToSpeech.ERROR_NETWORK) {
-                Timber.e("TTS", "Network error, retrying with offline voice...")
-                // Retry with offline voices or notify the user
-            }
-            speakingCallBack?.onStop()
+            speakingCallBack?.onError(utteranceId, errorCode)
         }
 
         override fun onStop(utteranceId: String?, interrupted: Boolean) {
             super.onStop(utteranceId, interrupted)
-            Timber.d("textToSpeech=> onStop")
-            speakingCallBack?.onStop()
         }
     }
 
     private lateinit var textToSpeech: TextToSpeech
-    var spokenTextRange = 0..0
 
     init {
         initSpeechProvider()

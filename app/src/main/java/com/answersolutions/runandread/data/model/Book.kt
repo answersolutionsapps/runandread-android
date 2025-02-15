@@ -1,6 +1,7 @@
 package com.answersolutions.runandread.data.model
 
 import com.answersolutions.extensions.formatSecondsToHMS
+import com.answersolutions.runandread.voice.languageId
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,7 +26,7 @@ data class Book(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
     val author: String,
-    val language: String = Locale.getDefault().language,
+    val language: String = Locale.getDefault().languageId(),
     val voiceIdentifier: String = "",
     val voiceRate: Float,
     val text: List<String>,

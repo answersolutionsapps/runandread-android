@@ -56,6 +56,7 @@ import com.answersolutions.runandread.data.model.Book
 import com.answersolutions.runandread.ui.components.NiceButton
 import com.answersolutions.runandread.ui.components.NiceButtonLarge
 import com.answersolutions.runandread.ui.settings.components.ConfirmDeleteDialog
+import com.answersolutions.runandread.ui.settings.components.ErrorMessageDialog
 import com.answersolutions.runandread.ui.settings.components.HorizontalPageListView
 import com.answersolutions.runandread.ui.settings.components.LanguagePicker
 import com.answersolutions.runandread.ui.settings.components.SpeechSpeedSelector
@@ -67,6 +68,7 @@ import com.answersolutions.runandread.ui.theme.smallSpace
 import com.answersolutions.runandread.ui.theme.normalSpace
 import com.answersolutions.runandread.voice.RunAndReadVoice
 import com.answersolutions.runandread.voice.VoiceSelectorViewModel
+import com.answersolutions.runandread.voice.toLocale
 import com.answersolutions.runandread.voice.toVoice
 import timber.log.Timber
 import java.util.Locale
@@ -78,6 +80,7 @@ fun BookSettingsScreenPreview() {
     RunAndReadTheme(darkTheme = true) {
         BookSettingsScreenContent(
             loading = false,
+            showVoiceError = true,
             bookState = BookSettingsViewModel.BookUIState(
                 title = Book.stab().first().title,
                 author = Book.stab().first().author
@@ -90,6 +93,7 @@ fun BookSettingsScreenPreview() {
             selectedPage = 0,
             selectedLanguage = Locale.getDefault(),
             availableLocales = listOf(),
+            recentLocales = listOf(),
             availableVoices = listOf(),
             selectedVoice = RunAndReadVoice("Voice 1", "en"),
             selectedRate = 1f,
@@ -107,10 +111,15 @@ fun BookSettingsScreenView(
     val voices by voiceSelector.availableVoices.collectAsState()
     val locales by voiceSelector.availableLocales.collectAsState()
 
+    val recentLocales = viewModel.recentSelectionsL.values
+
     val bookState by viewModel.bookState.collectAsState()
     val viewState by viewModel.viewState.collectAsState()
-    val selectedLanguage = Locale(bookState.language)
+    val showVoiceError = viewState.showVoiceError
+
+    val selectedLanguage = bookState.language.toLocale()
     val selectedVoice = voiceSelector.nameToVoice(bookState.voiceIdentifier, bookState.language)
+
 
     LaunchedEffect(Unit) {
         viewModel.setUpBook()
@@ -118,10 +127,12 @@ fun BookSettingsScreenView(
 
     BookSettingsScreenContent(
         loading = viewState.loading,
+        showVoiceError = showVoiceError,
         bookState = bookState,
         contextText = viewModel.contextText(),
         selectedPage = viewState.selectedPage,
         selectedLanguage = selectedLanguage,
+        recentLocales = recentLocales.toList(),
         availableLocales = locales.toList(),
         availableVoices = voices.toList(),
         selectedRate = bookState.voiceRate,
@@ -146,15 +157,18 @@ fun BookSettingsScreenView(
             }
         )
     }
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookSettingsScreenContent(
     loading: Boolean,
+    showVoiceError: Boolean,
     bookState: BookSettingsViewModel.BookUIState,
     contextText: List<String>,
     selectedPage: Int,
+    recentLocales: List<String>,
     availableLocales: List<Locale>,
     availableVoices: List<RunAndReadVoice>,
     selectedVoice: RunAndReadVoice,
@@ -308,8 +322,9 @@ fun BookSettingsScreenContent(
                         onEvent(BookSettingsEvent.DeleteClicked)
                     }
                     if (showLanguageDialog.value) {
-                        LanguagePicker(selectedLanguage = selectedLanguage,
+                        LanguagePicker(defaultLanguage = selectedLanguage,
                             availableLocales = availableLocales,
+                            recentLocales = recentLocales,
                             onLanguageSelected = {
                                 onEvent(BookSettingsEvent.LanguageSelected(it))
                                 Timber.d("onLanguageSelected=>$it")
@@ -322,11 +337,13 @@ fun BookSettingsScreenContent(
                             defaultVoice = selectedVoice,
                             availableVoices = availableVoices,
                             onVoiceSelected = {
-                                onEvent(BookSettingsEvent.PlayVoiceSample(
+                                onEvent(
+                                    BookSettingsEvent.PlayVoiceSample(
                                         selectedLanguage,
                                         it.toVoice(),
                                         selectedRate
-                                    ))
+                                    )
+                                )
                             },
                             onSave = {
                                 onEvent(BookSettingsEvent.VoiceSelected(it))
@@ -351,6 +368,15 @@ fun BookSettingsScreenContent(
                 )
 
             }
+        }
+        if (showVoiceError) {
+            ErrorMessageDialog(
+                title = "Voice Error",
+                message = "Something went wrong. Please check your internet connection and try again. Go to Settings and check if Text-to-Speech and voices are available on your phone.",
+                onDismissRequest = {
+                    onEvent(BookSettingsEvent.DismissVoiceErrorDialog)
+                }
+            )
         }
     }
 }

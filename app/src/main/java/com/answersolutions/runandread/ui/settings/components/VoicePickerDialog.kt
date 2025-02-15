@@ -67,12 +67,16 @@ fun VoicePicker(
 ) {
     val supportedVoices = remember {
         availableVoices.filter {
-            it.locale.language == selectedLanguage.language
+            it.locale.getLanguageId() == selectedLanguage.getLanguageId()
         }
     }
 
     val selectedVoice = remember {
         mutableStateOf(defaultVoice)
+    }
+
+    fun isSelected(voice: RunAndReadVoice): Boolean {
+       return voice.name == selectedVoice.value.name
     }
 
     AlertDialog(
@@ -108,7 +112,7 @@ fun VoicePicker(
                         val voice = supportedVoices[index]
                         ListItem(
                             colors = ListItemDefaults.colors(
-                                containerColor = if (voice.name == selectedVoice.value.name) {
+                                containerColor = if (isSelected(voice)) {
                                     MaterialTheme.colorScheme.primary
                                 } else {
                                     MaterialTheme.colorScheme.surface
@@ -116,14 +120,14 @@ fun VoicePicker(
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .selectable(selected = (voice.name == selectedVoice.value.name)) {
+                                .selectable(selected = (isSelected(voice))) {
                                     selectedVoice.value = supportedVoices[index]
                                     onVoiceSelected(selectedVoice.value)
                                 },
                             headlineContent = {
                                 Text(
                                     voice.name,
-                                    color = if (voice.name == selectedVoice.value.name) {
+                                    color = if (isSelected(voice)) {
                                         MaterialTheme.colorScheme.surface
                                     } else {
                                         MaterialTheme.colorScheme.primary
@@ -134,7 +138,7 @@ fun VoicePicker(
                                 Icon(
                                     imageVector = Icons.Default.PlayCircleOutline,
                                     contentDescription = "Play Sample",
-                                    tint = if (voice.name == selectedVoice.value.name) {
+                                    tint = if (isSelected(voice)) {
                                         MaterialTheme.colorScheme.surface
                                     } else {
                                         MaterialTheme.colorScheme.primary

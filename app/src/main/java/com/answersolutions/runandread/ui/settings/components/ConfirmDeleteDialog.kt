@@ -66,6 +66,19 @@ fun DeleteDialogDarkThemePreview() {
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+fun ErrorMessageDialogDarkThemePreview() {
+    RunAndReadTheme(darkTheme = true) {
+        ErrorMessageDialog(
+            message = "Something went wrong. Please check your internet connection and try again. Go to Settings and check if Text-to-Speech and voices are available on your phone.",
+            onDismissRequest = {
+
+            }
+        )
+    }
+}
+
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ConfirmDeleteDialog(
@@ -77,8 +90,8 @@ fun ConfirmDeleteDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        confirmButton = {onDeleteClicked()},
-        dismissButton = {onDismissRequest()},
+        confirmButton = { onDeleteClicked() },
+        dismissButton = { onDismissRequest() },
         title = {
             Text(
                 text = "You cannot undo this action!",
@@ -159,8 +172,8 @@ fun DeleteDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        confirmButton = {onDeleteClicked()},
-        dismissButton = {onDismissRequest()},
+        confirmButton = { onDeleteClicked() },
+        dismissButton = { onDismissRequest() },
         title = {
             Text(
                 text = "Delete Conversation",
@@ -208,3 +221,45 @@ fun DeleteDialog(
         }
     )
 }
+
+
+@Composable
+fun ErrorMessageDialog(
+    title: String = "Error",
+    message: String = "Something went wrong. Please check your internet connection and try again.",
+    onDismissRequest: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        confirmButton = {},
+        dismissButton = {
+            NiceButton(
+                title = "Cancel",
+                color = MaterialTheme.colorScheme.primary,
+                titleColor = MaterialTheme.colorScheme.surface,
+                clickHandler = onDismissRequest
+            )
+        },
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        },
+        text = @Composable {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Start,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    )
+}
+
