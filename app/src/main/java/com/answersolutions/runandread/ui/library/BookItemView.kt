@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import com.answersolutions.runandread.data.model.Book
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
+import com.answersolutions.runandread.voice.toLocale
 
 
 @Composable
@@ -21,29 +22,40 @@ fun BookItemView(item: Book, onSelect: () -> Unit) {
     var isPressed by remember { mutableStateOf(false) }
     val uiState by item.viewState.collectAsState()
 
-    Row(modifier = Modifier.fillMaxWidth().padding(8.dp).background(MaterialTheme.colorScheme.primary)
+    Row(modifier = Modifier
+        .fillMaxWidth()
+        .padding(8.dp)
+        .background(MaterialTheme.colorScheme.primary)
         .clickable {
-        isPressed = true
-        onSelect()
-    }) {
+            isPressed = true
+            onSelect()
+        }) {
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = if (uiState.isCompleted) {10.dp} else {0.dp})
-                .background(MaterialTheme.colorScheme.background)
+                .padding(
+                    start = if (uiState.isCompleted) {
+                        10.dp
+                    } else {
+                        0.dp
+                    }
+                )
+                .background(MaterialTheme.colorScheme.surface)
         ) {
             Text(
                 text = item.title,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
             )
             Text(
                 text = item.author,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp)
-                    .padding(bottom = 2.dp)
+                    .padding(bottom = 8.dp)
             )
 
             HorizontalDivider()
@@ -59,15 +71,15 @@ fun BookItemView(item: Book, onSelect: () -> Unit) {
             } else {
                 if (uiState.isCompleted) {
                     Text(
-                        text = "Finished | ${item.language}",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        text = "Finished | ${item.language.toLocale().displayLanguage}",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
                     )
                 } else {
                     Text(
-                        text = "${uiState.progressTime} of ${uiState.totalTime} | ${item.language}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        text = "${uiState.progressTime} of ${uiState.totalTime} | ${item.language.toLocale().displayLanguage}",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
                     )
                 }
             }
@@ -75,7 +87,8 @@ fun BookItemView(item: Book, onSelect: () -> Unit) {
     }
 
     // Scale effect for press animation
-    Modifier.scale(if (isPressed) 0.95f else 1f)
+    Modifier
+        .scale(if (isPressed) 0.95f else 1f)
         .animateContentSize()
         .onGloballyPositioned { coordinates ->
             if (isPressed) {
@@ -88,9 +101,11 @@ fun BookItemView(item: Book, onSelect: () -> Unit) {
 @Composable
 fun PreviewBookItemView() {
     RunAndReadTheme {
-        Column {
+        Column(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
             BookItemView(
-                item = Book.stab().first(),
+                item = Book.stab().first().apply {
+                    lazyCalculate {}
+                },
                 onSelect = { println("Book selected") }
             )
             HorizontalDivider()

@@ -70,7 +70,8 @@ class BookSettingsViewModel @Inject constructor(
                         Timber.d("textToSpeech=>1 onError=>$errorCode")
                         if (errorCode == TextToSpeech.ERROR_NETWORK_TIMEOUT ||
                             errorCode == TextToSpeech.ERROR_NETWORK ||
-                            errorCode == TextToSpeech.ERROR_SERVICE) {
+                            errorCode == TextToSpeech.ERROR_SERVICE
+                        ) {
                             Timber.e("Network error1, retrying with offline voice...")
                             // Retry with offline voices or notify the user
                             viewModelScope.launch {
@@ -109,7 +110,8 @@ class BookSettingsViewModel @Inject constructor(
         val author: String = "",
         val language: String = "",
         val voiceIdentifier: String = "",
-        val voiceRate: Float = 1.0f
+        val voiceRate: Float = 1.0f,
+        val text: List<String> = emptyList()
     )
 
     data class SettingsUIState(
@@ -139,17 +141,19 @@ class BookSettingsViewModel @Inject constructor(
                 recentSelectionsL.push(value = selected)
             }
 
-//            withContext(Dispatchers.Main) {
+            if (book != null) {
                 _state.value = _state.value.copy(
                     book = book,
-                    title = book?.title ?: "",
-                    author = book?.author ?: "",
-                    language = book?.language ?: Locale.getDefault().languageId(),
-                    voiceIdentifier = book?.voiceIdentifier ?: "",
-                    voiceRate = book?.voiceRate ?: 1.0f
+                    title = book.title ,
+                    author = book.author ,
+                    language = book.language ,
+                    voiceIdentifier = book.voiceIdentifier,
+                    voiceRate = book.voiceRate,
+                    text = book.text
                 )
-                _viewState.emit(_viewState.value.copy(loading = false)) // Ensure loading indicator stops
-//            }
+            }
+
+            _viewState.emit(_viewState.value.copy(loading = false)) // Ensure loading indicator stops
         }
     }
 
@@ -163,18 +167,16 @@ class BookSettingsViewModel @Inject constructor(
                 language = Locale.getDefault().languageId(),
                 voiceIdentifier = "en",
                 voiceRate = 1.0f,
+                text = book?.text ?: emptyList()
             )
+            _viewState.emit(_viewState.value.copy(selectedPage = 0))
         }
     }
 
-    fun contextText(): List<String> {
-        return _state.value.book?.text ?: emptyList()
-    }
-
-    fun currentPage(): String {
-        return if (viewState.value.selectedPage < contextText().size - 1) {
-            contextText()[viewState.value.selectedPage]
-        } else "1, 2, 3, 4, 5. 5, 4, 3, 2, 1!"
+    private fun currentPage(): String {
+        return if (viewState.value.selectedPage < _state.value.text.size - 1) {
+            _state.value.text[viewState.value.selectedPage]
+        } else "1, 2, 3, 4, 5, 5, 4, 3, 2, 1!"
     }
 
 
@@ -204,17 +206,29 @@ class BookSettingsViewModel @Inject constructor(
 
             withContext(Dispatchers.IO) {
                 _state.value.book?.let {
-                    repository.updateBook(it)
+                    val from = _viewState.value.selectedPage
+                    val to = bookState.value.text.lastIndex
+                    val b = it.copy(
+                        title = bookState.value.title,
+                        author = bookState.value.author,
+                        language = bookState.value.language,
+                        voiceIdentifier = bookState.value.voiceIdentifier,
+                        voiceRate = bookState.value.voiceRate,
+                        text = bookState.value.text.subList(from, to),
+                    )
+                    repository.updateBook(b)
                 } ?: run {
+                    val from = _viewState.value.selectedPage
+                    val to = bookState.value.text.lastIndex
                     val book = Book(
                         title = bookState.value.title,
                         author = bookState.value.author,
                         language = bookState.value.language,
                         voiceIdentifier = bookState.value.voiceIdentifier,
                         voiceRate = bookState.value.voiceRate,
-                        text = contextText(),
+                        text = bookState.value.text.subList(from, to),
                         lastPosition = 0,
-                        created = System.currentTimeMillis(),
+                        updated = System.currentTimeMillis(),
                         bookmarks = emptyList<Bookmark>().toMutableList(),
                     )
                     repository.addBook(book)

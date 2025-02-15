@@ -18,6 +18,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.PlayCircleOutline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -80,7 +81,7 @@ fun BookSettingsScreenPreview() {
     RunAndReadTheme(darkTheme = true) {
         BookSettingsScreenContent(
             loading = false,
-            showVoiceError = true,
+            showVoiceError = false,
             bookState = BookSettingsViewModel.BookUIState(
                 title = Book.stab().first().title,
                 author = Book.stab().first().author
@@ -116,7 +117,7 @@ fun BookSettingsScreenView(
     val bookState by viewModel.bookState.collectAsState()
     val viewState by viewModel.viewState.collectAsState()
     val showVoiceError = viewState.showVoiceError
-
+    val contextText = bookState.text
     val selectedLanguage = bookState.language.toLocale()
     val selectedVoice = voiceSelector.nameToVoice(bookState.voiceIdentifier, bookState.language)
 
@@ -129,7 +130,7 @@ fun BookSettingsScreenView(
         loading = viewState.loading,
         showVoiceError = showVoiceError,
         bookState = bookState,
-        contextText = viewModel.contextText(),
+        contextText = contextText,
         selectedPage = viewState.selectedPage,
         selectedLanguage = selectedLanguage,
         recentLocales = recentLocales.toList(),
@@ -416,9 +417,20 @@ fun BookTitleSection(
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
             colors = TextFieldDefaults.outlinedTextFieldColors(
                 containerColor = colorScheme.surface,
-                unfocusedBorderColor = Color.Gray
+                unfocusedBorderColor = colorScheme.surface
             ),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            trailingIcon = {
+                if (title.isNotEmpty()) {
+                    IconButton(onClick = { onTitleChanged("") }) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Clear text",
+                            tint = Color.Gray
+                        )
+                    }
+                }
+            }
         )
         Spacer(Modifier.height(normalSpace))
         OutlinedTextField(
@@ -444,9 +456,20 @@ fun BookTitleSection(
             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
             colors = TextFieldDefaults.outlinedTextFieldColors(
                 containerColor = colorScheme.surface,
-                unfocusedBorderColor = Color.Gray
+                unfocusedBorderColor = colorScheme.surface
             ),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            trailingIcon = {
+                if (title.isNotEmpty()) {
+                    IconButton(onClick = { onAuthorChanged("") }) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = "Clear text",
+                            tint = Color.Gray
+                        )
+                    }
+                }
+            }
         )
     }
 }

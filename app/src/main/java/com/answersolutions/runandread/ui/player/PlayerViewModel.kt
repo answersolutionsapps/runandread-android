@@ -74,7 +74,7 @@ class PlayerViewModel @Inject constructor(
     fun setUpBook() {
         viewModelScope.launch {
             selectedBook = withContext(Dispatchers.IO) {
-                libraryRepository.getSelectedBook()!!
+                libraryRepository.getSelectedBook()
             }
 
             selectedBook?.let { book ->
@@ -183,7 +183,7 @@ class PlayerViewModel @Inject constructor(
                     if (it.title.isEmpty()) {
                         it.title = titleForBookmark(it.position)
                     }; it
-                } ?: emptyList()
+                } ?: emptyList(),
             )
         }
     }
@@ -203,7 +203,7 @@ class PlayerViewModel @Inject constructor(
             currentWordIndexInFrame = 0
             currentFrame = emptyList()
             updateProgress()
-            selectedBook = selectedBook?.copy(lastPosition = currentWordIndex)
+            selectedBook = selectedBook?.copy(lastPosition = currentWordIndex, updated = System.currentTimeMillis())
         }
     }
 

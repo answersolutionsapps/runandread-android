@@ -86,7 +86,7 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.BookSettings.route) {
                         BookSettingsScreenView(
                             onNavigateBack = { book ->
-                                if (book == null) {
+                                if (book == null) {//open file were canceled
                                     navigationViewModel.popBack()
                                 } else {
                                     libraryViewModel.onSelectBook(book)

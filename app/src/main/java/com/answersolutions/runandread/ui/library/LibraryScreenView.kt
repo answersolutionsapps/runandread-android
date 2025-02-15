@@ -3,6 +3,7 @@ package com.answersolutions.runandread.ui.library
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -25,6 +26,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -38,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -55,7 +58,6 @@ fun LibraryScreenPreview() {
             books = Book.stab(),
             filterBooks = Book.stab(),
             filterText = "",
-            isLoading = false,
             onAboutClicked = {},
             onNewBookClicked = {},
             onFilterWithText = {},
@@ -81,13 +83,11 @@ fun LibraryScreenView(
     onFileSelected:(EBookFile)->Unit
 ) {
     val books by viewModel.libraryBooks.collectAsState(initial = emptyList())
-    val isLoading = viewModel.isLoading()
+    val isLoading = viewModel.viewState.collectAsState().value.loading
     var filterText by remember { mutableStateOf("") }
     var filterBooks by remember { mutableStateOf(emptyList<Book>()) }
 
     val context = LocalContext.current
-
-//    val clipboardManager = LocalClipboardManager.current
     var expanded by remember { mutableStateOf(false) }
 
     // File Picker Launcher
@@ -113,19 +113,18 @@ fun LibraryScreenView(
         books.filter {
             it.title.contains(filterText, true) ||
                     it.author.contains(filterText, true)
-        }
+        }.sortedByDescending { it.updated }
     } else {
-        books
+        books.sortedByDescending { it.updated }
     }
+
     LibraryScreenContent(
         books = books,
         filterBooks = filterBooks,
         filterText = filterText,
-        isLoading = isLoading,
         onAboutClicked = onAboutClicked,
         onNewBookClicked = {
             expanded = true
-//            viewModel.onShowFilePicker()
         },
         onFilterWithText = { filterText = it },
         onSelect = onSelect,
@@ -149,7 +148,19 @@ fun LibraryScreenView(
             }
         }
     )
+    if (isLoading) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color(0xcF7f7f7f))
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                color = colorScheme.primary
+            )
 
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -158,7 +169,7 @@ fun LibraryScreenContent(
     books: List<Book>,
     filterBooks: List<Book>,
     filterText: String,
-    isLoading: Boolean,
+//    isLoading: Boolean,
     onAboutClicked: () -> Unit,
     onNewBookClicked: () -> Unit,
     onFilterWithText: (String) -> Unit,
@@ -234,10 +245,6 @@ fun LibraryScreenContent(
                             )
                         }
                     }
-                }
-
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                 }
             }
         }

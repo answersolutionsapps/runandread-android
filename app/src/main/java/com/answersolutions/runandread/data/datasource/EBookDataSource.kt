@@ -29,9 +29,9 @@ class EBookDataSource @Inject constructor(
                 val title = document.documentInformation.title ?: "Unknown Title"
                 val author = document.documentInformation.author ?: "Unknown Author"
 
-                val text = PDFTextStripper().getText(document)
+                val text = PDFTextStripper().getText(document).split("\n")
                 Timber.d("PDF: $title ($author)")
-                EBookFile(title, author, listOf(text))
+                EBookFile(title, author, text)
             }
         } catch (e: Exception) {
             Timber.e(e, "Error extracting text from PDF")
@@ -49,12 +49,18 @@ class EBookDataSource @Inject constructor(
             val text = book.spine.spineReferences.mapNotNull { spineRef ->
                 try {
                     val htmlContent = spineRef.resource.reader.readText()
-                    Jsoup.parse(htmlContent).text() // Strip HTML tags
+                    val document = Jsoup.parse(htmlContent)
+
+                    document.select("title, section, cover, colophon, imprint, endnote, copyright").remove()
+                    val cleanedText = document.text().trim()
+//                    Jsoup.parse(htmlContent).text() // Strip HTML tags
+                    cleanedText.takeIf { it.isNotBlank() }
                 } catch (e: Exception) {
                     Timber.e(e, "Error extracting text from EPUB spine reference")
                     null
                 }
             }
+
             Timber.d("EPUB: $title ($author)")
             EBookFile(title, author, text)
         } catch (e: Exception) {
@@ -66,8 +72,8 @@ class EBookDataSource @Inject constructor(
     suspend fun extractPlainText(input: InputStream?): EBookFile? = withContext(Dispatchers.IO) {
         input ?: return@withContext null
         return@withContext try {
-            val text = input.bufferedReader().use { it.readText() }
-            EBookFile("Unknown Title", "Unknown Author", listOf(text))
+            val text = input.bufferedReader().use { it.readText() }.split("\n")//, listOf("This text has been narrated by the Run and Read app.")
+            EBookFile("Unknown Title", "Unknown Author", text)
         } catch (e: Exception) {
             Timber.e(e, "Error extracting plain text")
             null
@@ -100,7 +106,7 @@ class EBookDataSource @Inject constructor(
 
         return@withContext if (!clipData.isNullOrBlank()) {
             Timber.d("Clipboard: $clipData")
-            EBookFile("Clipboard Content", "", listOf(clipData))
+            EBookFile("Clipboard Content", "", clipData.split("\n"))//, "This text has been narrated by the Run and Read app."))
         } else null
     }
 }

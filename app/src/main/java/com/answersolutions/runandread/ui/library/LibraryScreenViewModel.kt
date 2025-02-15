@@ -8,6 +8,7 @@ import com.answersolutions.runandread.data.model.Book
 import com.answersolutions.runandread.data.model.EBookFile
 import com.answersolutions.runandread.data.repository.EBookRepository
 import com.answersolutions.runandread.data.repository.LibraryRepository
+import com.answersolutions.runandread.ui.settings.BookSettingsViewModel.BookUIState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +29,13 @@ class LibraryScreenViewModel @Inject constructor(
 
     private val _selectedBook = MutableStateFlow<Book?>(null)
     val selectedBook = _selectedBook.asStateFlow()
+
+    data class LibraryScreenUIState(
+        val loading: Boolean = false,
+    )
+
+    private val _viewState = MutableStateFlow(LibraryScreenUIState())
+    val viewState: StateFlow<LibraryScreenUIState> get() = _viewState.asStateFlow()
 
     fun loadBooks() {
         viewModelScope.launch {
@@ -81,13 +89,17 @@ class LibraryScreenViewModel @Inject constructor(
 
     fun loadEBookFromUri(uri: Uri, onLoaded:(EBookFile?)-> Unit) {
         viewModelScope.launch {
+            _viewState.emit(_viewState.value.copy(loading = true))
             onLoaded(fileRepository.getEBookFileFromUri(uri))
+            _viewState.emit(_viewState.value.copy(loading = false))
         }
     }
 
     fun loadEBookFromClipboard(onLoaded:(EBookFile?)-> Unit) {
         viewModelScope.launch {
+            _viewState.emit(_viewState.value.copy(loading = true))
             onLoaded(fileRepository.getEbookFileFromClipboard())
+            _viewState.emit(_viewState.value.copy(loading = false))
         }
     }
 
@@ -147,7 +159,7 @@ class LibraryScreenViewModel @Inject constructor(
         println("App is active")
     }
 
-    fun isLoading() = isLoading.value
+//    fun isLoading() = isLoading.value
 }
 
 //class FakeLibraryScreenViewModel : LibraryScreenViewModel {

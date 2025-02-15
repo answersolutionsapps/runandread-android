@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import java.util.*
@@ -31,7 +32,8 @@ data class Book(
     val voiceRate: Float,
     val text: List<String>,
     val lastPosition: Int,
-    val created: Long,
+    @SerialName("created")
+    val updated: Long,
     val bookmarks: MutableList<Bookmark> = emptyList<Bookmark>().toMutableList()
 ) {
 
@@ -101,7 +103,7 @@ data class Book(
                 voiceRate = voiceRate ?: data.voiceRate,
                 text = text ?: data.text,
                 lastPosition = lastPosition ?: data.lastPosition,
-                created = created ?: data.created,
+                updated = created ?: data.updated,
                 bookmarks = bookmarks ?: data.bookmarks,
             )
         }
@@ -116,7 +118,7 @@ data class Book(
                     voiceRate = 1.25f,
                     text = listOf("Call me Ishmael.", "Call me Ishmael."),
                     lastPosition = 0,
-                    created = System.currentTimeMillis()
+                    updated = System.currentTimeMillis()
                 ),
                 Book(
                     id = "1",
@@ -129,7 +131,7 @@ data class Book(
                         "IT is a truth universally acknowledged, that a single man in possession of a good fortune must be in want of a wife.. "
                     ),
                     lastPosition = 1,
-                    created = System.currentTimeMillis()
+                    updated = System.currentTimeMillis()
                 ),
                 Book(
                     id = "2",
@@ -144,7 +146,7 @@ data class Book(
                         "אבל הנער הזה והקיבה הזאת היו בכל זאת מיוחדים..",
                     ),
                     lastPosition = 0,
-                    created = System.currentTimeMillis()
+                    updated = System.currentTimeMillis()
                 )
             )
         }

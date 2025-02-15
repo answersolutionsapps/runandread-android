@@ -1,7 +1,5 @@
 package com.answersolutions.runandread.ui.settings.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,22 +14,20 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 import com.answersolutions.runandread.ui.theme.largeSpace
 import com.answersolutions.runandread.voice.RunAndReadVoice
+import com.answersolutions.runandread.voice.languageId
 import java.util.Locale
 
 @Preview(showBackground = true)
@@ -67,7 +63,7 @@ fun VoicePicker(
 ) {
     val supportedVoices = remember {
         availableVoices.filter {
-            it.locale.getLanguageId() == selectedLanguage.getLanguageId()
+            it.locale.languageId() == selectedLanguage.languageId()
         }
     }
 

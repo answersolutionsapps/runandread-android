@@ -12,7 +12,6 @@ interface SpeakingCallBack {
     fun onStart()
     fun onStop()
     fun onDone()
-    fun onError(utteranceId: String?, errorCode: Int)
 }
 
 class SpeechProvider(
