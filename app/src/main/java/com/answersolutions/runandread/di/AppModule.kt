@@ -5,6 +5,8 @@ import android.content.Context
 import com.answersolutions.runandread.data.datasource.EBookDataSource
 import com.answersolutions.runandread.data.datasource.LibraryAssetDataSource
 import com.answersolutions.runandread.data.datasource.LibraryDiskDataSource
+import com.answersolutions.runandread.data.datasource.PrefsStore
+import com.answersolutions.runandread.data.datasource.PrefsStoreImpl
 import com.answersolutions.runandread.data.datasource.VoiceDataSource
 import com.answersolutions.runandread.data.repository.EBookRepository
 import com.answersolutions.runandread.data.repository.LibraryRepository
@@ -73,5 +75,8 @@ object AppModule {
         return VoiceRepository(voiceDataSource)
     }
 
-
+    @Singleton
+    @Provides
+    fun providePrefsStore(@ApplicationContext context: Context): PrefsStore =
+        PrefsStoreImpl(context)
 }

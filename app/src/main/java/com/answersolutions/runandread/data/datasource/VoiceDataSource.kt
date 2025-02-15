@@ -19,14 +19,27 @@ class VoiceDataSource @Inject constructor(
 
     private var textToSpeech: TextToSpeech? = null
     private var availableVoices: Set<Voice> = setOf()
+    private var availableLocales: Set<Locale> = setOf()
 
     suspend fun loadVoices(): Set<RunAndReadVoice> = withContext(Dispatchers.IO) {
         return@withContext suspendCancellableCoroutine { continuation ->
             textToSpeech = TextToSpeech(context) { status ->
                 if (status == TextToSpeech.SUCCESS) {
                     textToSpeech?.let { tts ->
-                        availableVoices = tts.voices.filter { voice ->
-                            !voice.features.contains("notInstalled") //&& voice.name.endsWith("-language")
+//                        availableVoices = tts.voices.filter { voice ->
+//                            !voice.features.contains("notInstalled") //&& voice.name.endsWith("-language")
+//                        }.toSet()
+                        availableVoices = tts.voices.toSet()
+//                        availableVoices.forEach { voice ->
+//                            Timber.d("availableVoices ---------------->")
+//                            Timber.d("availableVoices ->${voice.name} of ${voice.locale.country}/${voice.locale.displayName}")
+//                            voice.features.forEach { f ->
+//                                Timber.d("features ->$f")
+//                            }
+//
+//                        }
+                        availableLocales = availableVoices.map { voice ->
+                            voice.locale
                         }.toSet()
                     }
                 }
@@ -38,6 +51,6 @@ class VoiceDataSource @Inject constructor(
     }
 
     fun getAvailableLocales(): Set<Locale> {
-        return availableVoices.map { it.locale }.toSet()
+        return availableLocales
     }
 }
