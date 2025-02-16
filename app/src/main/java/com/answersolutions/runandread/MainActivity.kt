@@ -13,7 +13,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -29,8 +28,7 @@ import com.answersolutions.runandread.ui.settings.BookSettingsViewModel
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 import com.answersolutions.runandread.voice.VoiceSelectorViewModel
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+
 
 sealed class Screen(val route: String) {
     data object Splash : Screen("init")

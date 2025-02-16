@@ -16,7 +16,7 @@
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove"/>
 
     <application
-        android:name="com.answersolutions.runandread.app.RunAndReadApp"
+        android:name=".app.RunAndReadApp"
         android:allowBackup="true"
         android:enableOnBackInvokedCallback="true"
         android:dataExtractionRules="@xml/data_extraction_rules"

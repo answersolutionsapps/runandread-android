@@ -25,17 +25,17 @@ class SpeechProvider(
 
     private val speechListener = object : UtteranceProgressListener() {
         override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
-            Timber.d("textToSpeech=>utteranceId=>$utteranceId")
-            Timber.d("textToSpeech=>frame=>$frame")
+//            Timber.d("textToSpeech=>utteranceId=>$utteranceId")
+//            Timber.d("textToSpeech=>frame=>$frame")
             spokenTextRange = start..end
 
             callBack(spokenTextRange)
 
-            Timber.d("textToSpeech=>range=>$start; $end")
+//            Timber.d("textToSpeech=>range=>$start; $end")
         }
-
+//
         override fun onStart(utteranceId: String?) {
-            Timber.d("textToSpeech=> onStart")
+//            Timber.d("textToSpeech=> onStart")
             speakingCallBack?.onStart()
         }
 
