@@ -4,16 +4,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.SubdirectoryArrowLeft
+
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.answersolutions.runandread.BuildConfig
+import com.answersolutions.runandread.MainActivity
 import com.answersolutions.runandread.ui.components.NiceButtonLarge
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 
@@ -38,6 +40,9 @@ fun AboutScreen(
                 })
         }
     ) { padding ->
+        val versionCode: Int = BuildConfig.VERSION_CODE
+        val versionName: String = BuildConfig.VERSION_NAME
+        val context = LocalContext.current as MainActivity
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -60,9 +65,7 @@ fun AboutScreen(
             // Link to Project Gutenberg
             Text("Visit Project Gutenberg website:")
             TextButton(onClick = {
-//                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://gutenberg.org"))
-//                it.context.startActivity(intent)
-                //todo:
+                context.openExternalLink("https://gutenberg.org")
             }) {
                 Text(
                     "www.gutenberg.org",
@@ -79,9 +82,7 @@ fun AboutScreen(
             // Website Link
             Text("Visit our website:")
             TextButton(onClick = {
-//                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://answersolutions.net"))
-//                it.context.startActivity(intent)
-                //todo:
+                context.openExternalLink("https://answersolutions.net")
             }) {
                 Text(
                     "www.answersolutions.net",
@@ -90,32 +91,22 @@ fun AboutScreen(
             }
 
             // App Version
-            Text("App Version: 1.0.0", style = MaterialTheme.typography.bodySmall)
+            Text("App version:$versionName($versionCode)", style = MaterialTheme.typography.bodySmall)
 
             // Report an Issue Button
             NiceButtonLarge(title = "Report an Issue", color = colorScheme.primary) {
-                val messageToSend = """
-                        Run & Read Support/Feedback Report
-                        <br><br>
-                        ==Report Begins==========
-                        <br>Input here your feedback or the details of the issues you have.
-                        <br>==Report Ends============
-                        <br><br>
-                        OS Version: Android 12
-                        <br>
-                        Model: Pixel 5
-                        <br>
-                        App Version: 1.0.0
-                    """
-                // Handle sending email (use Intent or your custom Email Service)
+
+                context.sendEmailToSupport()
             }
             // Divider
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             NiceButtonLarge(title = "Rate the App", color = colorScheme.primary) {
-//todo:
+                context.openAppRating(context)
             }
         }
     }
+
+
 }
 
 @Preview(showBackground = true)

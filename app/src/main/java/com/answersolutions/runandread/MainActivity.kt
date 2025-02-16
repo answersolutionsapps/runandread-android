@@ -1,5 +1,10 @@
 package com.answersolutions.runandread
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import androidx.activity.ComponentActivity
@@ -8,6 +13,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -23,6 +29,8 @@ import com.answersolutions.runandread.ui.settings.BookSettingsViewModel
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 import com.answersolutions.runandread.voice.VoiceSelectorViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String) {
     data object Splash : Screen("init")
@@ -119,4 +127,80 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    fun openAppRating(context: Context) {
+        val packageName = context.packageName
+        try {
+            // Open the Play Store app if available
+            context.startActivity(
+                Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("market://details?id=$packageName")
+                ).apply {
+                    setPackage("com.android.vending") // Ensure only Play Store handles it
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
+        } catch (e: ActivityNotFoundException) {
+            // Open in browser if Play Store is unavailable
+            context.startActivity(
+                Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+                ).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
+        }
+    }
+
+    fun openExternalLink(url: String) {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        startActivity(intent)
+    }
+
+    fun sendEmailToSupport() {
+        val text = prepareBugReport()
+        val sendIntent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_EMAIL, "support@answersolutions.net")
+            putExtra(Intent.EXTRA_SUBJECT, "RunAndRead Support")
+            putExtra(Intent.EXTRA_TEXT, text)
+            type = "text/plain"
+        }
+
+        val shareIntent = Intent.createChooser(sendIntent, "RunAndRead Support")
+        startActivity(shareIntent)
+    }
+
+    private fun prepareBugReport(name: String = "RunAndRead"): String {
+        val versionCode: Int = BuildConfig.VERSION_CODE
+        val versionName: String = BuildConfig.VERSION_NAME
+        val model = Build.MODEL
+        val version = Build.VERSION.RELEASE
+
+
+        val messageToSend = StringBuffer(
+            """
+$name Bug Report
+Support Email: support@answersolutions.net
+Feedback Email: feedback@answersolutions.net
+
+==Report Begins/Issue/Feedback==========
+
+Please provide here all possible details.
+Providing these details can help customer support quickly identify the problem and provide you with the best solution possible.
+
+==Report Ends============
+
+OS Version: $version
+
+Model: $model
+
+App Version: $versionName($versionCode)
+
+For more information, please visit: https://answersolutions.net
+"""
+        )
+        return messageToSend.toString()
+    }
+
 }

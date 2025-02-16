@@ -284,7 +284,15 @@ fun PlayerScreenContent(
                         }
                     }
                 } ?: run {
-                    Text("Error", textAlign = TextAlign.Center)
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Loading..", textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                    }
                 }
             }
         },

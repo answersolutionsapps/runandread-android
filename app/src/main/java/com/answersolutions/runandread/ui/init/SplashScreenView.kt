@@ -9,7 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.multidex.BuildConfig
+import com.answersolutions.runandread.BuildConfig
 import com.answersolutions.runandread.Screen
 import com.answersolutions.runandread.ui.library.LibraryScreenViewModel
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme

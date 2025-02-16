@@ -23,8 +23,11 @@ android {
     }
 
     buildTypes {
-        release {
+        debug {
             isMinifyEnabled = false
+        }
+        release {
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -42,9 +45,6 @@ android {
         compose = true
         buildConfig = true
     }
-//    packaging {// to resolve conflict with the pdf lib
-//        resources.excludes.add("META-INF/*")
-//    }
 }
 
 dependencies {
@@ -76,13 +76,6 @@ dependencies {
     implementation(libs.hilt.android)
     kapt(libs.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
-
-//    implementation(libs.androidx.lifecycle.service)
-//    implementation(libs.androidx.hilt.lifecycle.viewmodel)
-//    kapt (libs.androidx.hilt.compiler)
-//    implementation (libs.androidx.lifecycle.viewmodel.ktx)
-//    implementation (libs.androidx.lifecycle.livedata.ktx)
-
 
     // Navigation
     implementation(libs.androidx.navigation.fragment.ktx)
