@@ -1,6 +1,8 @@
 package com.answersolutions.runandread.ui.player
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,17 +10,21 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkAdd
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
@@ -26,11 +32,15 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -48,13 +58,31 @@ import com.answersolutions.runandread.ui.theme.doubleLargeSpace
 import com.answersolutions.runandread.ui.theme.largeSpace
 import com.answersolutions.runandread.ui.theme.normalSpace
 import com.answersolutions.runandread.ui.theme.smallSpace
+import com.answersolutions.runandread.voice.toLocale
+import java.util.Locale
 
 @Preview(showBackground = true)
 @Composable
 fun PlayerScreenPreview() {
     RunAndReadTheme(darkTheme = true) {
         PlayerScreenContent(selectedBook = Book.stab().first(),
-            bookmarks = listOf(Bookmark(1, "Test 1"), Bookmark(2, "Test 2"), Bookmark(3, "Test 3")),
+            bookmarks = listOf(
+                Bookmark(1, "Test 1 Test 1 Test 1 Test 1 Test 1 Test 1  Test 1"),
+                Bookmark(2, "Test 2"),
+                Bookmark(3, "Test 3"),
+                Bookmark(4, "Test 4"),
+                Bookmark(5, "Test 5"),
+                Bookmark(6, "Test 6"),
+                Bookmark(7, "Test 7"),
+                Bookmark(8, "Test 8"),
+                Bookmark(9, "Test 9"),
+                Bookmark(9, "Test 9"),
+                Bookmark(9, "Test 9"),
+                Bookmark(9, "Test 9"),
+                Bookmark(9, "Test 9")
+            ),
+            currentFrame = listOf("Test 1", "Test 2", "Test 3"),
+            currentWordIndexInFrame = 1,
             isSpeaking = true,
             progressTime = "00:00",
             progress = 100f,
@@ -72,7 +100,7 @@ fun PlayerScreenPreview() {
             },
             onBookmarkClick = { position ->
 
-            })
+            }, onDeleteBookmark = {})
     }
 }
 
@@ -89,6 +117,7 @@ fun PlayerScreenView(
     }
 
     val uiState = viewModel.viewState.collectAsState()
+    val highlightingState = viewModel.highlightingState.collectAsState()
     val isSpeaking = uiState.value.isSpeaking
     val progress = uiState.value.progress
     val progressTime = uiState.value.progressTime
@@ -96,10 +125,15 @@ fun PlayerScreenView(
     val spokenTextRange = uiState.value.spokenTextRange
     val bookmarks = uiState.value.bookmarks
 
+    val currentFrame = highlightingState.value.currentFrame
+    val currentWordIndexInFrame = highlightingState.value.currentWordIndexInFrame
+
 
     PlayerScreenContent(
         selectedBook = viewModel.selectedBook,
         bookmarks = bookmarks,
+        currentFrame = currentFrame,
+        currentWordIndexInFrame = currentWordIndexInFrame,
         isSpeaking = isSpeaking,
         progressTime = progressTime,
         progress = progress,
@@ -129,6 +163,9 @@ fun PlayerScreenView(
         },
         onBookmarkClick = { position ->
             viewModel.playFromBookmark(position.toInt())
+        },
+        onDeleteBookmark = { bookmark ->
+            viewModel.deleteBookmark(bookmark)
         }
     )
 
@@ -160,11 +197,13 @@ fun PlayerScreenView(
 
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PlayerScreenContent(
     selectedBook: Book?,
     bookmarks: List<Bookmark>,
+    currentFrame: List<String>,
+    currentWordIndexInFrame: Int,
     isSpeaking: Boolean,
     progressTime: String,
     progress: Float,
@@ -177,7 +216,8 @@ fun PlayerScreenContent(
     onAddBookmark: () -> Unit,
     onBackToLibrary: () -> Unit,
     onSettings: () -> Unit,
-    onBookmarkClick: (position: Float) -> Unit
+    onBookmarkClick: (position: Float) -> Unit,
+    onDeleteBookmark: (Bookmark) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -205,9 +245,10 @@ fun PlayerScreenContent(
             )
         },
         content = { padding ->
+            var selectedBookmark by remember { mutableStateOf<Bookmark?>(null) }
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally, modifier =
-                Modifier
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
             ) {
@@ -215,20 +256,44 @@ fun PlayerScreenContent(
                     Column(modifier = Modifier.padding(horizontal = largeSpace)) {
                         LazyColumn {
                             items(bookmarks) { bookMark ->
-                                Text(
-                                    text = bookMark.title,
-                                    maxLines = 2,
-                                    style = MaterialTheme.typography.titleLarge,
+                                var showDelete by remember { mutableStateOf(false) }
+                                Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-
+                                        .combinedClickable(
+                                            onClick = { onBookmarkClick(bookMark.position.toFloat()) },
+                                            onLongClick = {
+                                                selectedBookmark = bookMark
+                                                showDelete = true
+                                            }
+                                        )
                                         .padding(horizontal = 8.dp, vertical = 8.dp)
-                                        .clickable {
-                                            onBookmarkClick(
-                                                bookMark.position.toFloat()
+                                ) {
+                                    Text(
+                                        text = bookMark.title,
+                                        maxLines = 2,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    if (showDelete && selectedBookmark == bookMark) {
+                                        VerticalDivider()
+                                        IconButton(
+                                            onClick = {
+                                                onDeleteBookmark(bookMark)
+                                                showDelete = false
+                                            },
+                                            modifier = Modifier
+                                                .align(Alignment.CenterVertically)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = "Delete",
+                                                tint = colorScheme.error,
+                                                modifier = Modifier.size(24.dp)
                                             )
                                         }
-                                )
+                                    }
+                                }
                                 HorizontalDivider()
                             }
                         }
@@ -238,6 +303,12 @@ fun PlayerScreenContent(
 
                 Spacer(modifier = Modifier.weight(1f))
                 HorizontalDivider()
+            }
+        },
+        bottomBar = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 selectedBook?.let {
                     Spacer(modifier = Modifier.padding(vertical = normalSpace))
                     Text(
@@ -294,10 +365,12 @@ fun PlayerScreenContent(
                         )
                     }
                 }
-            }
-        },
-        bottomBar = {
-            Column {
+                HorizontalDivider()
+                HorizontallyScrolledTextView(
+                    words = currentFrame,
+                    index = currentWordIndexInFrame,
+                    language = selectedBook?.language?.toLocale() ?: Locale.getDefault()
+                )
                 HorizontalDivider()
                 Row(
                     modifier = Modifier

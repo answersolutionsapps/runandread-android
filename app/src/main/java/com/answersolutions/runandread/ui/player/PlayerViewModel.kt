@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.math.max
@@ -54,8 +55,9 @@ class PlayerViewModel @Inject constructor(
     private var words = listOf<String>()
     private var selectedSpeechRate: Float = 1f
     private var currentWordIndex = 0
-    private var currentFrame = listOf<String>()
-    private var currentWordIndexInFrame = 0
+
+    //    private var currentFrame = listOf<String>()
+//    private var currentWordIndexInFrame = 0
     private var totalWords: Int = 0
     private var totalTim: Double = 0.0
 
@@ -67,6 +69,14 @@ class PlayerViewModel @Inject constructor(
         val totalTimeString: String = "00:00",
         val bookmarks: List<Bookmark> = emptyList()
     )
+
+    data class HighlightingUIState(
+        val currentWordIndexInFrame: Int = 0, val currentFrame: List<String> = listOf()
+    )
+
+
+    private val _highlightingState = MutableStateFlow(HighlightingUIState())
+    val highlightingState: StateFlow<HighlightingUIState> get() = _highlightingState.asStateFlow()
 
     private val _state = MutableStateFlow(PlayerUIState())
     val viewState: StateFlow<PlayerUIState> get() = _state.asStateFlow()
@@ -84,18 +94,19 @@ class PlayerViewModel @Inject constructor(
                     .mapNotNull { it.takeIf { it.isNotEmpty() } }
 
                 totalWords = words.size
-                currentWordIndexInFrame = 0
+//                currentWordIndexInFrame = 0
                 selectedSpeechRate = book.voiceRate
 
                 totalTim = calculateElapsedTime(totalWords - 1)
 
                 withContext(Dispatchers.Main) {
-                    _state.value = _state.value.copy(
-                        totalTimeString = totalTim.formatSecondsToHMS(),
-                        bookmarks = book.bookmarks.map {
-                            it.title = titleForBookmark(it.position); it
-                        }
-                    )
+                    _highlightingState.value =
+                        _highlightingState.value.copy(currentWordIndexInFrame = 0)
+                    _state.value =
+                        _state.value.copy(totalTimeString = totalTim.formatSecondsToHMS(),
+                            bookmarks = book.bookmarks.map {
+                                it.title = titleForBookmark(it.position); it
+                            })
                     updatePosition(book.lastPosition.toFloat())
                     textToSpeech = SpeechProvider(
                         application,
@@ -122,6 +133,23 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    fun deleteBookmark(bookmark: Bookmark) {
+        Timber.d("Deleting bookmark at position: ${bookmark.position}")
+        Timber.d("Before delete, bookmarks size: ${selectedBook?.bookmarks?.size}")
+
+        viewModelScope.launch {
+            selectedBook?.let { book ->
+                val updatedBookmarks = book.bookmarks.filter { it.position != bookmark.position }
+                book.bookmarks.clear()
+                book.bookmarks.addAll(updatedBookmarks)
+
+                _state.value = _state.value.copy(bookmarks = updatedBookmarks)
+
+                Timber.d("After delete, bookmarks size: ${book.bookmarks.size}")
+            } ?: Timber.w("No selected book found")
+        }
+    }
+
     fun playFromBookmark(position: Int) {
         textToSpeech.stop()
         updatePosition(position.toFloat())
@@ -134,12 +162,15 @@ class PlayerViewModel @Inject constructor(
 
     fun speak() {
         if (isSpeaking()) return
-        currentWordIndexInFrame = 0
+//        _highlightingState.value = _highlightingState.value.copy(currentWordIndexInFrame = 0)
         val toIndex = minOf(currentWordIndex + FRAME_SIZE, totalWords - 1)
-        currentFrame =
-            words.subList(fromIndex = currentWordIndex, toIndex = toIndex)
-                .toList()
-        textToSpeech.speak(currentFrame.joinToString(" "))
+//        currentFrame = words.subList(fromIndex = currentWordIndex, toIndex = toIndex).toList()
+
+        _highlightingState.value = _highlightingState.value.copy(
+            currentWordIndexInFrame = 0, currentFrame = words.subList(currentWordIndex, toIndex)
+        )
+
+        textToSpeech.speak(_highlightingState.value.currentFrame.joinToString(" "))
     }
 
     fun isSpeaking(): Boolean {
@@ -153,12 +184,14 @@ class PlayerViewModel @Inject constructor(
     }
 
     private val speechRangeCallBack: (range: IntRange) -> Unit = { range ->
-        if (currentWordIndexInFrame < currentFrame.size - 1) {
+        if (_highlightingState.value.currentWordIndexInFrame < _highlightingState.value.currentFrame.size - 1) {
             _state.value = _state.value.copy(
                 spokenTextRange = range
             )
             currentWordIndex += 1
-            currentWordIndexInFrame += 1
+            _highlightingState.value =
+                _highlightingState.value.copy(currentWordIndexInFrame = _highlightingState.value.currentWordIndexInFrame + 1)
+//            currentWordIndexInFrame += 1
             val secondsElapsed = (words.take(currentWordIndex)
                 .joinToString(" ").length * SECONDS_PER_CHARACTER) / selectedSpeechRate.toDouble()
 
@@ -168,11 +201,16 @@ class PlayerViewModel @Inject constructor(
             )
             selectedBook = selectedBook?.copy(lastPosition = currentWordIndex)
             playbackProgressCallBack(
-                secondsElapsed.toLong() * 1000,
-                totalTim.toLong() * 1000,
-                isSpeaking()
+                secondsElapsed.toLong() * 1000, totalTim.toLong() * 1000, isSpeaking()
             )
         }
+    }
+
+    fun currentTimeElapsed(): Long {
+        val secondsElapsed = (words.take(currentWordIndex)
+            .joinToString(" ").length * SECONDS_PER_CHARACTER) / selectedSpeechRate.toDouble()
+
+        return secondsElapsed.toLong() * 1000L
     }
 
     fun saveBookmark() {
@@ -200,10 +238,13 @@ class PlayerViewModel @Inject constructor(
     fun updatePosition(value: Float) {
         viewModelScope.launch {
             currentWordIndex = value.coerceIn(0f, totalWords.toFloat() - 1).toInt()
-            currentWordIndexInFrame = 0
-            currentFrame = emptyList()
+            _highlightingState.value = _highlightingState.value.copy(
+                currentWordIndexInFrame = 0, currentFrame = emptyList()
+            )
             updateProgress()
-            selectedBook = selectedBook?.copy(lastPosition = currentWordIndex, updated = System.currentTimeMillis())
+            selectedBook = selectedBook?.copy(
+                lastPosition = currentWordIndex, updated = System.currentTimeMillis()
+            )
         }
     }
 
@@ -216,8 +257,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun calculateElapsedTime(progress: Int): Double {
-        val chars = words.take(progress)
-            .joinToString(" ").length
+        val chars = words.take(progress).joinToString(" ").length
         val seconds = (chars * SECONDS_PER_CHARACTER) / selectedSpeechRate
         return seconds
     }
@@ -243,10 +283,13 @@ class PlayerViewModel @Inject constructor(
         }
 
         private fun playNextFrame() {
-            currentWordIndexInFrame = 0
+//            currentWordIndexInFrame = 0
             val toIndex = minOf(currentWordIndex + FRAME_SIZE, totalWords - 1)
-            currentFrame = words.subList(currentWordIndex, toIndex)
-            textToSpeech.speak(currentFrame.joinToString(" "))
+//            currentFrame = words.subList(currentWordIndex, toIndex)
+            _highlightingState.value = _highlightingState.value.copy(
+                currentWordIndexInFrame = 0, currentFrame = words.subList(currentWordIndex, toIndex)
+            )
+            textToSpeech.speak(_highlightingState.value.currentFrame.joinToString(" "))
         }
     }
 
@@ -260,8 +303,7 @@ class PlayerViewModel @Inject constructor(
 
     fun stopPlaybackService() {
         val intent = Intent(
-            application,
-            PlayerService::class.java
+            application, PlayerService::class.java
         ).setAction(PlayerService.ACTION_SERVICE_STOP)
         application.startService(intent)
     }

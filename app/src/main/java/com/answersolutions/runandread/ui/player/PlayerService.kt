@@ -71,13 +71,16 @@ class PlayerService : Service() {
                                 PlaybackStateCompat.ACTION_REWIND or
                                 PlaybackStateCompat.ACTION_SEEK_TO
                     )
-                    .setState(PlaybackStateCompat.STATE_PLAYING, 0, 1f)
+                    .setState(
+                        PlaybackStateCompat.STATE_PLAYING,
+                        playerViewModel?.currentTimeElapsed() ?: 0,
+                        1f
+                    )
                     .build()
             )
             isActive = true
         }
     }
-
 
 
     override fun onCreate() {
@@ -88,6 +91,7 @@ class PlayerService : Service() {
         playerViewModel?.playbackProgressCallBack = { position, duration, isPlaying ->
             updatePlaybackState(position = position, duration = duration, isPlaying)
         }
+        updateNotification()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -111,15 +115,23 @@ class PlayerService : Service() {
         override fun onPlay() {
             Timber.d("onPlay()")
             playerViewModel?.speak()
-            updatePlaybackState(position = 0, duration = 0, isPlaying = true) // Ensure state updates
-            updateNotification(true)
+            updatePlaybackState(
+                position = 0,
+                duration = 0,
+                isPlaying = true
+            ) // Ensure state updates
+//            updateNotification()
         }
 
         override fun onPause() {
             Timber.d("onPause()")
             playerViewModel?.stopSpeaking()
-            updatePlaybackState(position = 0, duration = 0, isPlaying = false) // Ensure state updates
-            updateNotification(false)
+            updatePlaybackState(
+                position = 0,
+                duration = 0,
+                isPlaying = false
+            ) // Ensure state updates
+//            updateNotification(false)
         }
 
         override fun onFastForward() {
@@ -180,7 +192,7 @@ class PlayerService : Service() {
         mediaSession.isActive = true // Ensure it's active!
     }
 
-    private fun updateNotification(isPlaying: Boolean) {
+    private fun updateNotification() {
         playerViewModel?.selectedBook?.let {
             val playIntent = getServiceIntent(ACTION_PLAY, 1)
             val pauseIntent = getServiceIntent(ACTION_PAUSE, 2)
@@ -200,20 +212,21 @@ class PlayerService : Service() {
                 .setStyle(
                     androidx.media.app.NotificationCompat.MediaStyle()
                         .setMediaSession(mediaSession.sessionToken)
-                        .setShowActionsInCompactView(1, 2, 3) // Shows Play/Pause, FF, FR
+                        .setShowActionsInCompactView(1, 2, 3, 4) // Shows Play/Pause, FF, FR
                 )
 
 
 //                .apply {
-            if (isPlaying) {
-                builder.addAction(R.drawable.ic_pause, "Pause", pauseIntent)
-            } else {
-                builder.addAction(R.drawable.ic_play, "Play", playIntent)
-            }
+//            if (isPlaying) {
+            builder.addAction(R.drawable.ic_play, "Play", playIntent)
+            builder.addAction(R.drawable.ic_pause, "Pause", pauseIntent)
+//            } else {
+
+//            }
 //                }
 //            builder.addAction(R.drawable.ic_bookmark, "Favorite", favoriteIntent)
-            builder.addAction(R.drawable.ic_fr, "Rewind", frIntent)
             builder.addAction(R.drawable.ic_ff, "Fast Forward", ffIntent)
+            builder.addAction(R.drawable.ic_fr, "Rewind", frIntent)
 
 
 //            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -222,14 +235,14 @@ class PlayerService : Service() {
 
 //            startForeground(NOTIFICATION_ID, builder.build())
 
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+//            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-            if (isPlaying) {
-                startForeground(NOTIFICATION_ID, builder.build())
-            } else {
-                stopForeground(false)
-                notificationManager.notify(NOTIFICATION_ID, builder.build())
-            }
+//            if (isPlaying) {
+            startForeground(NOTIFICATION_ID, builder.build())
+//            } else {
+//                stopForeground(false)
+//                notificationManager.notify(NOTIFICATION_ID, builder.build())
+//            }
         }
     }
 
