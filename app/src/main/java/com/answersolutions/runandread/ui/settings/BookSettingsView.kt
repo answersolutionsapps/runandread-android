@@ -54,6 +54,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.answersolutions.runandread.data.model.Book
+import com.answersolutions.runandread.data.model.RunAndReadBook
 import com.answersolutions.runandread.ui.components.NiceButton
 import com.answersolutions.runandread.ui.components.NiceButtonLarge
 import com.answersolutions.runandread.ui.settings.components.ConfirmDeleteDialog
@@ -83,8 +84,8 @@ fun BookSettingsScreenPreview() {
             loading = false,
             showVoiceError = false,
             bookState = BookSettingsViewModel.BookUIState(
-                title = Book.stab().first().title,
-                author = Book.stab().first().author
+                title = RunAndReadBook.stab().first().title,
+                author = RunAndReadBook.stab().first().author
             ),
             contextText = listOf(
                 "With this approach, you can now have selectable text in your view without allowing the user to modify the content. The text will be fully selectable, and users will be able to copy it to the clipboard by selecting and using the standard copy commands.",
@@ -105,7 +106,7 @@ fun BookSettingsScreenPreview() {
 
 @Composable
 fun BookSettingsScreenView(
-    onNavigateBack: (Book?) -> Unit,
+    onNavigateBack: (RunAndReadBook?) -> Unit,
     viewModel: BookSettingsViewModel,
     voiceSelector: VoiceSelectorViewModel
 ) {

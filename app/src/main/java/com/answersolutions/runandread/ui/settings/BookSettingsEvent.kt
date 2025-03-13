@@ -2,6 +2,7 @@ package com.answersolutions.runandread.ui.settings
 
 import android.speech.tts.Voice
 import com.answersolutions.runandread.data.model.Book
+import com.answersolutions.runandread.data.model.RunAndReadBook
 import com.answersolutions.runandread.voice.languageId
 import com.answersolutions.runandread.voice.RunAndReadVoice
 import timber.log.Timber
@@ -21,7 +22,7 @@ sealed class BookSettingsEvent {
     data object DismissVoiceErrorDialog : BookSettingsEvent()
 }
 
-fun BookSettingsEvent.onEvent(model: BookSettingsViewModel, onNavigateBack: (Book?) -> Unit) {
+fun BookSettingsEvent.onEvent(model: BookSettingsViewModel, onNavigateBack: (RunAndReadBook?) -> Unit) {
     Timber.d("BookSettingsScreenView.onEvent=>${this}")
     when (this) {
         is BookSettingsEvent.TitleChanged -> model.updateBookDetails(title = this.title)

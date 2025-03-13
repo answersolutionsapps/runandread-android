@@ -25,22 +25,15 @@ class SpeechProvider(
 
     private val speechListener = object : UtteranceProgressListener() {
         override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
-//            Timber.d("textToSpeech=>utteranceId=>$utteranceId")
-//            Timber.d("textToSpeech=>frame=>$frame")
             spokenTextRange = start..end
-
             callBack(spokenTextRange)
-
-//            Timber.d("textToSpeech=>range=>$start; $end")
         }
-//
+
         override fun onStart(utteranceId: String?) {
-//            Timber.d("textToSpeech=> onStart")
             speakingCallBack?.onStart()
         }
 
         override fun onDone(utteranceId: String?) {
-            Timber.d("textToSpeech=> onDone")
             spokenTextRange = 0..0
             speakingCallBack?.onDone()
         }
@@ -66,7 +59,6 @@ class SpeechProvider(
 
         override fun onStop(utteranceId: String?, interrupted: Boolean) {
             super.onStop(utteranceId, interrupted)
-            Timber.d("textToSpeech=> onStop")
             speakingCallBack?.onStop()
         }
     }
@@ -80,7 +72,6 @@ class SpeechProvider(
 
     private fun initSpeechProvider() {
         textToSpeech = TextToSpeech(context) { status ->
-            Timber.d("textToSpeech.init=>$status")
             if (status == TextToSpeech.SUCCESS) {
                 textToSpeech.language = currentLocale
                 textToSpeech.voice = currentVoice
@@ -111,7 +102,6 @@ class SpeechProvider(
     }
 
     fun stop() {
-        Timber.d("textToSpeech.stop()=>${textToSpeech.isSpeaking}")
         textToSpeech.stop()
     }
 

@@ -47,6 +47,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.answersolutions.runandread.data.model.Book
 import com.answersolutions.runandread.data.model.EBookFile
+import com.answersolutions.runandread.data.model.RunAndReadBook
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 
 
@@ -55,8 +56,8 @@ import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 fun LibraryScreenPreview() {
     RunAndReadTheme {
         LibraryScreenContent(
-            books = Book.stab(),
-            filterBooks = Book.stab(),
+            books = RunAndReadBook.stab(),
+            filterBooks = RunAndReadBook.stab(),
             filterText = "",
             onAboutClicked = {},
             onNewBookClicked = {},
@@ -78,14 +79,14 @@ fun LibraryScreenPreview() {
 @Composable
 fun LibraryScreenView(
     viewModel: LibraryScreenViewModel,
-    onSelect: (Book) -> Unit,
+    onSelect: (RunAndReadBook) -> Unit,
     onAboutClicked: () -> Unit,
     onFileSelected:(EBookFile)->Unit
 ) {
     val books by viewModel.libraryBooks.collectAsState(initial = emptyList())
     val isLoading = viewModel.viewState.collectAsState().value.loading
     var filterText by remember { mutableStateOf("") }
-    var filterBooks by remember { mutableStateOf(emptyList<Book>()) }
+    var filterBooks by remember { mutableStateOf(emptyList<RunAndReadBook>()) }
 
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
@@ -134,8 +135,9 @@ fun LibraryScreenView(
         },
         onFileOptionSelected = {
             expanded = false
-            // File picker only allows EPUB, TXT, and PDF files
-            launcher.launch(arrayOf("application/epub+zip", "text/plain", "application/pdf"))
+            // File picker only allows RANDR, EPUB, TXT, and PDF files
+            launcher.launch(arrayOf("*/*"))
+//            launcher.launch(arrayOf("application/zip", "application/epub+zip", "text/plain", "application/pdf"))
         },
         onClipboardOptionSelected = {
             expanded = false
@@ -166,14 +168,14 @@ fun LibraryScreenView(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreenContent(
-    books: List<Book>,
-    filterBooks: List<Book>,
+    books: List<RunAndReadBook>,
+    filterBooks: List<RunAndReadBook>,
     filterText: String,
 //    isLoading: Boolean,
     onAboutClicked: () -> Unit,
     onNewBookClicked: () -> Unit,
     onFilterWithText: (String) -> Unit,
-    onSelect: (Book) -> Unit,
+    onSelect: (RunAndReadBook) -> Unit,
     expanded: Boolean,
     onDismissRequest: () -> Unit,
     onFileOptionSelected: () -> Unit,

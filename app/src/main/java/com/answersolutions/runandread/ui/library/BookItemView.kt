@@ -13,12 +13,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import com.answersolutions.runandread.data.model.Book
+import com.answersolutions.runandread.data.model.RunAndReadBook
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 import com.answersolutions.runandread.voice.toLocale
 
 
 @Composable
-fun BookItemView(item: Book, onSelect: () -> Unit) {
+fun BookItemView(item: RunAndReadBook, onSelect: () -> Unit) {
     var isPressed by remember { mutableStateOf(false) }
     val uiState by item.viewState.collectAsState()
 
@@ -103,19 +104,19 @@ fun PreviewBookItemView() {
     RunAndReadTheme {
         Column(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
             BookItemView(
-                item = Book.stab().first().apply {
+                item = RunAndReadBook.stab().first().apply {
                     lazyCalculate {}
                 },
                 onSelect = { println("Book selected") }
             )
             HorizontalDivider()
             BookItemView(
-                item = Book.stab()[1],
+                item = RunAndReadBook.stab()[1],
                 onSelect = { println("Book selected") }
             )
             HorizontalDivider()
             BookItemView(
-                item = Book.stab().last(),
+                item = RunAndReadBook.stab().last(),
                 onSelect = { println("Book selected") }
             )
         }

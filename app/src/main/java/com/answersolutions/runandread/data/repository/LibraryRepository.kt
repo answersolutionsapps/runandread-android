@@ -2,20 +2,20 @@ package com.answersolutions.runandread.data.repository
 
 import com.answersolutions.runandread.data.datasource.LibraryDataSource
 import com.answersolutions.runandread.data.datasource.LibraryDiskDataSource
-import com.answersolutions.runandread.data.model.Book
+import com.answersolutions.runandread.data.model.RunAndReadBook
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 import javax.inject.Singleton
 
 interface LibraryRepository {
-    fun getLibraryBooks(): Flow<List<Book>>
-    suspend fun addBook(book: Book)
-    suspend fun updateBook(book: Book)
+    fun getLibraryBooks(): Flow<List<RunAndReadBook>>
+    suspend fun addBook(book: RunAndReadBook)
+    suspend fun updateBook(book: RunAndReadBook)
     suspend fun deleteBook(bookId: String)
 
     suspend fun selectBook(bookId: String)
-    suspend fun getSelectedBook(): Book?
+    suspend fun getSelectedBook(): RunAndReadBook?
     suspend fun unselectBook()
 }
 
@@ -25,7 +25,7 @@ class LibraryRepositoryImpl @Inject constructor(
     private val assetDataSource: LibraryDataSource
 ) : LibraryRepository {
 
-    override fun getLibraryBooks(): Flow<List<Book>> = flow {
+    override fun getLibraryBooks(): Flow<List<RunAndReadBook>> = flow {
         val books = diskDataSource.loadBooks()
         if (books.isEmpty()) {
             // Load from assets if disk library is empty
@@ -37,12 +37,12 @@ class LibraryRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun addBook(book: Book) = diskDataSource.addBook(book)
-    override suspend fun updateBook(book: Book) = diskDataSource.updateBook(book)
+    override suspend fun addBook(book: RunAndReadBook) = diskDataSource.addBook(book)
+    override suspend fun updateBook(book: RunAndReadBook) = diskDataSource.updateBook(book)
     override suspend fun deleteBook(bookId: String) = diskDataSource.deleteBook(bookId)
 
     override suspend fun selectBook(bookId: String) = diskDataSource.selectBook(bookId)
-    override suspend fun getSelectedBook(): Book? = diskDataSource.getSelectedBook()
+    override suspend fun getSelectedBook(): RunAndReadBook? = diskDataSource.getSelectedBook()
     override suspend fun unselectBook() = diskDataSource.unselectBook()
 
 }

@@ -6,10 +6,13 @@ import android.speech.tts.Voice
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.answersolutions.runandread.data.datasource.PrefsStore
+import com.answersolutions.runandread.data.model.AudioBook
 import com.answersolutions.runandread.data.model.Book
 import com.answersolutions.runandread.data.model.Bookmark
 import com.answersolutions.runandread.data.repository.LibraryRepository
 import com.answersolutions.runandread.data.model.EBookFile
+import com.answersolutions.runandread.data.model.RunAndReadBook
+import com.answersolutions.runandread.data.model.TextPart
 import com.answersolutions.runandread.voice.SimpleSpeakingCallBack
 import com.answersolutions.runandread.voice.SimpleSpeechProvider
 import com.answersolutions.runandread.voice.languageId
@@ -105,13 +108,21 @@ class BookSettingsViewModel @Inject constructor(
     }
 
     data class BookUIState(
-        val book: Book? = null,
+        val book: RunAndReadBook? = null,
         val title: String = "",
         val author: String = "",
         val language: String = "",
         val voiceIdentifier: String = "",
         val voiceRate: Float = 1.0f,
-        val text: List<String> = emptyList()
+        val text: List<String> = emptyList(),
+
+
+        val audioPath: String = "",
+        val parts: List<TextPart> = emptyList(),
+        val rate: Float = 1.0f,
+        val voice: String = "",
+        val model: String = "",
+        val bookSource: String = ""
     )
 
     data class SettingsUIState(
@@ -141,20 +152,39 @@ class BookSettingsViewModel @Inject constructor(
                 recentSelectionsL.push(value = selected)
             }
 
-            if (book != null) {
+            if (book is Book) {
                 _state.value = _state.value.copy(
                     book = book,
-                    title = book.title ,
-                    author = book.author ,
-                    language = book.language ,
+                    title = book.title,
+                    author = book.author,
+                    language = book.language,
                     voiceIdentifier = book.voiceIdentifier,
                     voiceRate = book.voiceRate,
                     text = book.text
+                )
+            } else if (book is AudioBook) {
+                _state.value = _state.value.copy(
+                    book = book,
+                    title = book.title,
+                    author = book.author,
+                    language = book.language,
+                    voiceIdentifier = "",
+                    voiceRate = 1.0f,
+                    text = emptyList(),
+                    audioPath = book.audioFilePath,
+                    parts = book.parts,
+                    rate = book.voiceRate,
+                    voice = book.voice,
+                    model = book.model,
                 )
             }
 
             _viewState.emit(_viewState.value.copy(loading = false)) // Ensure loading indicator stops
         }
+    }
+
+    private fun isAudioBook(): Boolean {
+        return _state.value.audioPath.isNotEmpty()
     }
 
 
@@ -167,7 +197,14 @@ class BookSettingsViewModel @Inject constructor(
                 language = Locale.getDefault().languageId(),
                 voiceIdentifier = "en",
                 voiceRate = 1.0f,
-                text = book?.text ?: emptyList()
+                text = book?.content ?: emptyList(),
+
+                audioPath = book?.audioPath ?: "",
+                parts = book?.text ?: emptyList(),
+                rate = book?.rate ?: 1.0f,
+                voice = book?.voice ?: "",
+                model = book?.model ?: "",
+                bookSource = book?.bookSource ?: ""
             )
             _viewState.emit(_viewState.value.copy(selectedPage = 0))
         }
@@ -208,29 +245,58 @@ class BookSettingsViewModel @Inject constructor(
                 _state.value.book?.let {
                     val from = _viewState.value.selectedPage
                     val to = bookState.value.text.lastIndex
-                    val b = it.copy(
-                        title = bookState.value.title,
-                        author = bookState.value.author,
-                        language = bookState.value.language,
-                        voiceIdentifier = bookState.value.voiceIdentifier,
-                        voiceRate = bookState.value.voiceRate,
-                        text = bookState.value.text.subList(from, to),
-                    )
+                    val b = when (it) {
+                        is Book -> {
+                            it.copy(
+                                title = bookState.value.title,
+                                author = bookState.value.author,
+                                language = bookState.value.language,
+                                voiceIdentifier = bookState.value.voiceIdentifier,
+                                voiceRate = bookState.value.voiceRate,
+                                text = bookState.value.text.subList(from, to),
+                            )
+                        }
+                        is AudioBook -> {
+                            it.copy(
+                                title = bookState.value.title,
+                                author = bookState.value.author,
+                                voiceRate = bookState.value.voiceRate,
+                            )
+                        }
+                    }
                     repository.updateBook(b)
                 } ?: run {
                     val from = _viewState.value.selectedPage
                     val to = bookState.value.text.lastIndex
-                    val book = Book(
-                        title = bookState.value.title,
-                        author = bookState.value.author,
-                        language = bookState.value.language,
-                        voiceIdentifier = bookState.value.voiceIdentifier,
-                        voiceRate = bookState.value.voiceRate,
-                        text = bookState.value.text.subList(from, to),
-                        lastPosition = 0,
-                        updated = System.currentTimeMillis(),
-                        bookmarks = emptyList<Bookmark>().toMutableList(),
-                    )
+
+                    val book = if (bookState.value.audioPath.isNotEmpty()) {
+                        AudioBook(
+                            title = bookState.value.title,
+                            author = bookState.value.author,
+                            language = bookState.value.language,
+                            voiceRate = bookState.value.rate,
+                            audioFilePath= bookState.value.audioPath,
+                            parts = bookState.value.parts,
+                            lastPosition = 0,
+                            voice = bookState.value.voice,
+                            model = bookState.value.model,
+                            bookSource = bookState.value.bookSource,
+                            updated = System.currentTimeMillis(),
+                            bookmarks = emptyList<Bookmark>().toMutableList()
+                        )
+                    } else {
+                        Book(
+                            title = bookState.value.title,
+                            author = bookState.value.author,
+                            language = bookState.value.language,
+                            voiceIdentifier = bookState.value.voiceIdentifier,
+                            voiceRate = bookState.value.voiceRate,
+                            text = bookState.value.text.subList(from, to),
+                            lastPosition = 0,
+                            updated = System.currentTimeMillis(),
+                            bookmarks = emptyList<Bookmark>().toMutableList(),
+                        )
+                    }
                     repository.addBook(book)
                     repository.selectBook(book.id)
                 }

@@ -6,9 +6,11 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.answersolutions.extensions.formatSecondsToHMS
+import com.answersolutions.runandread.data.model.AudioBook
 import com.answersolutions.runandread.data.model.Book
 import com.answersolutions.runandread.data.model.Book.Companion.SECONDS_PER_CHARACTER
 import com.answersolutions.runandread.data.model.Bookmark
+import com.answersolutions.runandread.data.model.RunAndReadBook
 import com.answersolutions.runandread.data.repository.LibraryRepository
 import com.answersolutions.runandread.data.repository.VoiceRepository
 import com.answersolutions.runandread.voice.SpeakingCallBack
@@ -40,7 +42,7 @@ class PlayerViewModel @Inject constructor(
         private const val SEEK_STEP = 60
     }
 
-    var selectedBook: Book? = null
+    var selectedBook: RunAndReadBook? = null
 
     fun saveBookChanges() {
         viewModelScope.launch {
@@ -56,8 +58,6 @@ class PlayerViewModel @Inject constructor(
     private var selectedSpeechRate: Float = 1f
     private var currentWordIndex = 0
 
-    //    private var currentFrame = listOf<String>()
-//    private var currentWordIndexInFrame = 0
     private var totalWords: Int = 0
     private var totalTim: Double = 0.0
 
@@ -89,33 +89,37 @@ class PlayerViewModel @Inject constructor(
 
             selectedBook?.let { book ->
                 val selectedLanguage = Locale(book.language)
-                val voice = repository.nameToVoice(book.voiceIdentifier, book.language)
-                words = book.text.flatMap { it.split("\\s+".toRegex()) }
-                    .mapNotNull { it.takeIf { it.isNotEmpty() } }
 
-                totalWords = words.size
-//                currentWordIndexInFrame = 0
-                selectedSpeechRate = book.voiceRate
+                if (book is Book) {
+                    val voice = repository.nameToVoice(book.voiceIdentifier, book.language)
+                    words = book.text.flatMap { it.split("\\s+".toRegex()) }
+                        .mapNotNull { it.takeIf { it.isNotEmpty() } }
 
-                totalTim = calculateElapsedTime(totalWords - 1)
+                    totalWords = words.size
+                    selectedSpeechRate = book.voiceRate
 
-                withContext(Dispatchers.Main) {
-                    _highlightingState.value =
-                        _highlightingState.value.copy(currentWordIndexInFrame = 0)
-                    _state.value =
-                        _state.value.copy(totalTimeString = totalTim.formatSecondsToHMS(),
-                            bookmarks = book.bookmarks.map {
-                                it.title = titleForBookmark(it.position); it
-                            })
-                    updatePosition(book.lastPosition.toFloat())
-                    textToSpeech = SpeechProvider(
-                        application,
-                        currentLocale = selectedLanguage,
-                        currentVoice = voice.toVoice(),
-                        speechRate = selectedSpeechRate,
-                        callBack = speechRangeCallBack,
-                        speakingCallBack = speakingCallBack
-                    )
+                    totalTim = calculateElapsedTime(totalWords - 1)
+
+                    withContext(Dispatchers.Main) {
+                        _highlightingState.value =
+                            _highlightingState.value.copy(currentWordIndexInFrame = 0)
+                        _state.value =
+                            _state.value.copy(totalTimeString = totalTim.formatSecondsToHMS(),
+                                bookmarks = book.bookmarks.map {
+                                    it.title = titleForBookmark(it.position); it
+                                })
+                        updatePosition(book.lastPosition.toFloat())
+                        textToSpeech = SpeechProvider(
+                            application,
+                            currentLocale = selectedLanguage,
+                            currentVoice = voice.toVoice(),
+                            speechRate = selectedSpeechRate,
+                            callBack = speechRangeCallBack,
+                            speakingCallBack = speakingCallBack
+                        )
+                    }
+                } else {
+
                 }
             }
         }
@@ -151,7 +155,12 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun playFromBookmark(position: Int) {
-        textToSpeech.stop()
+        if (selectedBook is Book) {
+            textToSpeech.stop()
+        } else {
+            //todo:
+        }
+
         updatePosition(position.toFloat())
         speak()
     }
@@ -162,10 +171,7 @@ class PlayerViewModel @Inject constructor(
 
     fun speak() {
         if (isSpeaking()) return
-//        _highlightingState.value = _highlightingState.value.copy(currentWordIndexInFrame = 0)
         val toIndex = minOf(currentWordIndex + FRAME_SIZE, totalWords - 1)
-//        currentFrame = words.subList(fromIndex = currentWordIndex, toIndex = toIndex).toList()
-
         _highlightingState.value = _highlightingState.value.copy(
             currentWordIndexInFrame = 0, currentFrame = words.subList(currentWordIndex, toIndex)
         )
@@ -174,12 +180,21 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun isSpeaking(): Boolean {
-        return textToSpeech.isSpeaking()
+        if (selectedBook is Book) {
+            return textToSpeech.isSpeaking()
+        } else {
+            //todo:
+            return false
+        }
     }
 
     fun stopSpeaking() {
         viewModelScope.launch {
-            textToSpeech.stop()
+            if (selectedBook is Book) {
+                textToSpeech.stop()
+            } else {
+                //todo:
+            }
         }
     }
 
@@ -191,7 +206,6 @@ class PlayerViewModel @Inject constructor(
             currentWordIndex += 1
             _highlightingState.value =
                 _highlightingState.value.copy(currentWordIndexInFrame = _highlightingState.value.currentWordIndexInFrame + 1)
-//            currentWordIndexInFrame += 1
             val secondsElapsed = (words.take(currentWordIndex)
                 .joinToString(" ").length * SECONDS_PER_CHARACTER) / selectedSpeechRate.toDouble()
 
@@ -199,7 +213,12 @@ class PlayerViewModel @Inject constructor(
                 progress = currentWordIndex.toFloat(),
                 progressTime = secondsElapsed.formatSecondsToHMS()
             )
-            selectedBook = selectedBook?.copy(lastPosition = currentWordIndex)
+            if (selectedBook is Book) {
+                selectedBook = (selectedBook as? Book)?.copy(lastPosition = currentWordIndex)
+            } else if (selectedBook is AudioBook) {
+                selectedBook = (selectedBook as? AudioBook)?.copy(lastPosition = currentWordIndex)
+            }
+
             playbackProgressCallBack(
                 secondsElapsed.toLong() * 1000, totalTim.toLong() * 1000, isSpeaking()
             )
@@ -230,7 +249,12 @@ class PlayerViewModel @Inject constructor(
     fun fastRewind() = seek(-SEEK_STEP)
 
     private fun seek(offset: Int) {
-        textToSpeech.stop()
+        if (selectedBook is Book) {
+            textToSpeech.stop()
+        }else {
+            //todo:
+        }
+
         updatePosition(currentWordIndex.toFloat() + offset)
         speak()
     }
@@ -242,9 +266,18 @@ class PlayerViewModel @Inject constructor(
                 currentWordIndexInFrame = 0, currentFrame = emptyList()
             )
             updateProgress()
-            selectedBook = selectedBook?.copy(
-                lastPosition = currentWordIndex, updated = System.currentTimeMillis()
-            )
+            if (selectedBook is Book) {
+                selectedBook = (selectedBook as? Book)?.copy(
+                    lastPosition = currentWordIndex,
+                    updated = System.currentTimeMillis()
+                )
+            } else if (selectedBook is AudioBook) {
+                selectedBook = (selectedBook as? AudioBook)?.copy(
+                    lastPosition = currentWordIndex,
+                    updated = System.currentTimeMillis()
+                )
+            }
+
         }
     }
 
@@ -283,9 +316,7 @@ class PlayerViewModel @Inject constructor(
         }
 
         private fun playNextFrame() {
-//            currentWordIndexInFrame = 0
             val toIndex = minOf(currentWordIndex + FRAME_SIZE, totalWords - 1)
-//            currentFrame = words.subList(currentWordIndex, toIndex)
             _highlightingState.value = _highlightingState.value.copy(
                 currentWordIndexInFrame = 0, currentFrame = words.subList(currentWordIndex, toIndex)
             )

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.answersolutions.runandread.data.model.Book
 import com.answersolutions.runandread.data.model.EBookFile
+import com.answersolutions.runandread.data.model.RunAndReadBook
 import com.answersolutions.runandread.data.repository.EBookRepository
 import com.answersolutions.runandread.data.repository.LibraryRepository
 import com.answersolutions.runandread.ui.settings.BookSettingsViewModel.BookUIState
@@ -24,10 +25,10 @@ class LibraryScreenViewModel @Inject constructor(
     private val fileRepository: EBookRepository
 ) : ViewModel() {
 
-    private val _libraryBooks = MutableStateFlow<List<Book>>(emptyList())
+    private val _libraryBooks = MutableStateFlow<List<RunAndReadBook>>(emptyList())
     val libraryBooks = _libraryBooks.asStateFlow()
 
-    private val _selectedBook = MutableStateFlow<Book?>(null)
+    private val _selectedBook = MutableStateFlow<RunAndReadBook?>(null)
     val selectedBook = _selectedBook.asStateFlow()
 
     data class LibraryScreenUIState(
@@ -46,7 +47,7 @@ class LibraryScreenViewModel @Inject constructor(
         }
     }
 
-    fun onSelectBook(book: Book) {
+    fun onSelectBook(book: RunAndReadBook) {
         viewModelScope.launch {
             libraryRepository.selectBook(book.id)
             _selectedBook.emit(libraryRepository.getSelectedBook())

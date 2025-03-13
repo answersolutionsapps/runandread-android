@@ -52,6 +52,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.answersolutions.runandread.data.model.Book
 import com.answersolutions.runandread.data.model.Bookmark
+import com.answersolutions.runandread.data.model.RunAndReadBook
 import com.answersolutions.runandread.ui.components.NiceRoundButton
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 import com.answersolutions.runandread.ui.theme.doubleLargeSpace
@@ -65,7 +66,7 @@ import java.util.Locale
 @Composable
 fun PlayerScreenPreview() {
     RunAndReadTheme(darkTheme = true) {
-        PlayerScreenContent(selectedBook = Book.stab().first(),
+        PlayerScreenContent(selectedBook = RunAndReadBook.stab().first(),
             bookmarks = listOf(
                 Bookmark(1, "Test 1 Test 1 Test 1 Test 1 Test 1 Test 1  Test 1"),
                 Bookmark(2, "Test 2"),
@@ -107,7 +108,7 @@ fun PlayerScreenPreview() {
 @Composable
 fun PlayerScreenView(
     onBackToLibrary: () -> Unit,
-    onSettings: (Book) -> Unit,
+    onSettings: (RunAndReadBook) -> Unit,
     viewModel: PlayerViewModel,
     onPlayback: (Float) -> Unit
 ) {
@@ -200,7 +201,7 @@ fun PlayerScreenView(
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PlayerScreenContent(
-    selectedBook: Book?,
+    selectedBook: RunAndReadBook?,
     bookmarks: List<Bookmark>,
     currentFrame: List<String>,
     currentWordIndexInFrame: Int,

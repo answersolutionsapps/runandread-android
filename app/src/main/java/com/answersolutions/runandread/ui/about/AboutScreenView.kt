@@ -90,6 +90,16 @@ fun AboutScreen(
                 )
             }
 
+            Text("Open-source tooling to create audiobooks in the Run & Read format:")
+            TextButton(onClick = {
+                context.openExternalLink("https://github.com/sergenes/runandread-audiobook")
+            }) {
+                Text(
+                    "runandread-audiobook on GitHub",
+                    style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline)
+                )
+            }
+
             // App Version
             Text("App version:$versionName($versionCode)", style = MaterialTheme.typography.bodySmall)
 
