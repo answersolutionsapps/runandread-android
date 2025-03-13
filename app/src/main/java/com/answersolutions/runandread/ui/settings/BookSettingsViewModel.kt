@@ -1,6 +1,7 @@
 package com.answersolutions.runandread.ui.settings
 
 import android.content.Context
+import android.media.MediaPlayer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.Voice
 import androidx.lifecycle.ViewModel
@@ -57,39 +58,64 @@ class BookSettingsViewModel @Inject constructor(
 ) : ViewModel() {
 
     private var textToSpeech: SimpleSpeechProvider? = null
+    private var mediaPlayer: MediaPlayer? = null
     val recentSelectionsL: LimitedDictionary = LimitedDictionary(limit = 5U)
 
     fun payTextSample(language: Locale, voice: Voice, rate: Float) {
-        val sampleText = currentPage().substring(0, min(currentPage().length, 100))
 
-        if (textToSpeech == null) {
-            textToSpeech = SimpleSpeechProvider(
-                application,
-                currentLocale = language,
-                currentVoice = voice,
-                speechRate = rate,
-                speakingCallBack = object : SimpleSpeakingCallBack {
-                    override fun onError(utteranceId: String?, errorCode: Int) {
-                        Timber.d("textToSpeech=>1 onError=>$errorCode")
-                        if (errorCode == TextToSpeech.ERROR_NETWORK_TIMEOUT ||
-                            errorCode == TextToSpeech.ERROR_NETWORK ||
-                            errorCode == TextToSpeech.ERROR_SERVICE
-                        ) {
-                            Timber.e("Network error1, retrying with offline voice...")
-                            // Retry with offline voices or notify the user
-                            viewModelScope.launch {
-                                _viewState.emit(_viewState.value.copy(showVoiceError = true))
-                            }
-                        }
-                    }
+       if(bookState.value.book is Book) {
+           val sampleText = currentPage().substring(0, min(currentPage().length, 100))
+
+           if (textToSpeech == null) {
+               textToSpeech = SimpleSpeechProvider(
+                   application,
+                   currentLocale = language,
+                   currentVoice = voice,
+                   speechRate = rate,
+                   speakingCallBack = object : SimpleSpeakingCallBack {
+                       override fun onError(utteranceId: String?, errorCode: Int) {
+                           Timber.d("textToSpeech=>1 onError=>$errorCode")
+                           if (errorCode == TextToSpeech.ERROR_NETWORK_TIMEOUT ||
+                               errorCode == TextToSpeech.ERROR_NETWORK ||
+                               errorCode == TextToSpeech.ERROR_SERVICE
+                           ) {
+                               Timber.e("Network error1, retrying with offline voice...")
+                               // Retry with offline voices or notify the user
+                               viewModelScope.launch {
+                                   _viewState.emit(_viewState.value.copy(showVoiceError = true))
+                               }
+                           }
+                       }
+                   }
+               )
+           }
+           if (textToSpeech?.isSpeaking() == true) {
+               textToSpeech?.stop()
+           } else {
+               textToSpeech?.updateLocale(language, voice, rate)
+               textToSpeech?.speak(sampleText)
+           }
+       }
+    }
+
+    fun payAudioSample() {
+        if(bookState.value.book is AudioBook) {
+            val book = (bookState.value.book as AudioBook)
+            if (mediaPlayer == null) {
+                mediaPlayer = MediaPlayer().apply {
+                    setDataSource(book.audioFilePath)
+                    prepare()
                 }
-            )
-        }
-        if (textToSpeech?.isSpeaking() == true) {
-            textToSpeech?.stop()
-        } else {
-            textToSpeech?.updateLocale(language, voice, rate)
-            textToSpeech?.speak(sampleText)
+            }
+
+            if(mediaPlayer?.isPlaying == true) {
+                mediaPlayer?.pause()
+            } else {
+                mediaPlayer?.apply {
+                    playbackParams = playbackParams.setSpeed(bookState.value.voiceRate)
+                    start()
+                }
+            }
         }
     }
 
@@ -306,6 +332,7 @@ class BookSettingsViewModel @Inject constructor(
             // Back to UI thread
             completed()
             _viewState.value = _viewState.value.copy(loading = false)
+            mediaPlayer?.stop()
         }
     }
 
@@ -322,7 +349,7 @@ class BookSettingsViewModel @Inject constructor(
     }
 
     fun onDelete() {
-        // Handle showing "About" section
+        // todo: implement deleting the book audio and text
         println("onDelete clicked")
         _viewState.value = _viewState.value.copy(showDeleteDialog = false)
     }

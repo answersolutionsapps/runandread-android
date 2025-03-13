@@ -6,6 +6,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.answersolutions.extensions.formatSecondsToHMS
+import com.answersolutions.runandread.audio.AudioBookPlayer
 import com.answersolutions.runandread.data.model.AudioBook
 import com.answersolutions.runandread.data.model.Book
 import com.answersolutions.runandread.data.model.Book.Companion.SECONDS_PER_CHARACTER
@@ -52,14 +53,15 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    private lateinit var textToSpeech: SpeechProvider
+    private var textToSpeech: SpeechProvider? = null
+    private var audioBookPlayer: AudioBookPlayer? = null
 
     private var words = listOf<String>()
     private var selectedSpeechRate: Float = 1f
     private var currentWordIndex = 0
 
     private var totalWords: Int = 0
-    private var totalTim: Double = 0.0
+    private var totalTime: Double = 0.0
 
     data class PlayerUIState(
         val isSpeaking: Boolean = false,
@@ -98,13 +100,13 @@ class PlayerViewModel @Inject constructor(
                     totalWords = words.size
                     selectedSpeechRate = book.voiceRate
 
-                    totalTim = calculateElapsedTime(totalWords - 1)
+                    totalTime = calculateElapsedTime(totalWords - 1)
 
                     withContext(Dispatchers.Main) {
                         _highlightingState.value =
                             _highlightingState.value.copy(currentWordIndexInFrame = 0)
                         _state.value =
-                            _state.value.copy(totalTimeString = totalTim.formatSecondsToHMS(),
+                            _state.value.copy(totalTimeString = totalTime.formatSecondsToHMS(),
                                 bookmarks = book.bookmarks.map {
                                     it.title = titleForBookmark(it.position); it
                                 })
@@ -118,8 +120,42 @@ class PlayerViewModel @Inject constructor(
                             speakingCallBack = speakingCallBack
                         )
                     }
-                } else {
+                } else if (book is AudioBook) {
+                    book.lazyCalculate {
+                        _state.value =
+                            _state.value.copy(
+                                totalTimeString = book.viewState.value.totalTime,
+                                progressTime = book.viewState.value.progressTime
+                            )
+                    }
+                    withContext(Dispatchers.Main) {
+                        audioBookPlayer = AudioBookPlayer(
+                            filePath = book.audioFilePath,
+                            playbackRate = book.voiceRate,
+                            listener = object : AudioBookPlayer.PlayerListener {
+                                override fun onStart() {
+                                    _state.value = _state.value.copy(isSpeaking = true)
+                                }
 
+                                override fun onPause() {
+                                    _state.value = _state.value.copy(isSpeaking = false)
+                                }
+
+                                override fun onCompleted() {
+                                    _state.value = _state.value.copy(isSpeaking = false)
+                                }
+
+                                override fun onProgressUpdate(progress: Int, duration: Int) {
+                                    println("Progress: $progress / $duration seconds")
+                                    _state.value = _state.value.copy(
+                                        progress = progress.toFloat(),
+                                        progressTime = progress.toDouble().formatSecondsToHMS()
+                                    )
+                                }
+                            }
+                        )
+                        updatePosition(book.lastPosition.toFloat())
+                    }
                 }
             }
         }
@@ -156,13 +192,12 @@ class PlayerViewModel @Inject constructor(
 
     fun playFromBookmark(position: Int) {
         if (selectedBook is Book) {
-            textToSpeech.stop()
+            textToSpeech?.stop()
+            updatePosition(position.toFloat())
+            speak()
         } else {
             //todo:
         }
-
-        updatePosition(position.toFloat())
-        speak()
     }
 
     fun sliderRange(): ClosedFloatingPointRange<Float> {
@@ -170,30 +205,33 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun speak() {
-        if (isSpeaking()) return
-        val toIndex = minOf(currentWordIndex + FRAME_SIZE, totalWords - 1)
-        _highlightingState.value = _highlightingState.value.copy(
-            currentWordIndexInFrame = 0, currentFrame = words.subList(currentWordIndex, toIndex)
-        )
+        if (selectedBook is Book) {
+            if (isSpeaking()) return
+            val toIndex = minOf(currentWordIndex + FRAME_SIZE, totalWords - 1)
+            _highlightingState.value = _highlightingState.value.copy(
+                currentWordIndexInFrame = 0, currentFrame = words.subList(currentWordIndex, toIndex)
+            )
 
-        textToSpeech.speak(_highlightingState.value.currentFrame.joinToString(" "))
+            textToSpeech?.speak(_highlightingState.value.currentFrame.joinToString(" "))
+        } else {
+            audioBookPlayer?.play()
+        }
     }
 
     fun isSpeaking(): Boolean {
-        if (selectedBook is Book) {
-            return textToSpeech.isSpeaking()
+        return if (selectedBook is Book) {
+            textToSpeech?.isSpeaking() == true
         } else {
-            //todo:
-            return false
+            audioBookPlayer?.isPlaying() == true
         }
     }
 
     fun stopSpeaking() {
         viewModelScope.launch {
             if (selectedBook is Book) {
-                textToSpeech.stop()
+                textToSpeech?.stop()
             } else {
-                //todo:
+                audioBookPlayer?.pause()
             }
         }
     }
@@ -220,7 +258,7 @@ class PlayerViewModel @Inject constructor(
             }
 
             playbackProgressCallBack(
-                secondsElapsed.toLong() * 1000, totalTim.toLong() * 1000, isSpeaking()
+                secondsElapsed.toLong() * 1000, totalTime.toLong() * 1000, isSpeaking()
             )
         }
     }
@@ -250,28 +288,30 @@ class PlayerViewModel @Inject constructor(
 
     private fun seek(offset: Int) {
         if (selectedBook is Book) {
-            textToSpeech.stop()
-        }else {
-            //todo:
+            textToSpeech?.stop()
+            updatePosition(currentWordIndex.toFloat() + offset)
+            speak()
+        } else {
+            audioBookPlayer?.stop()
+            audioBookPlayer?.fastForward(offset)
         }
-
-        updatePosition(currentWordIndex.toFloat() + offset)
-        speak()
     }
 
     fun updatePosition(value: Float) {
         viewModelScope.launch {
-            currentWordIndex = value.coerceIn(0f, totalWords.toFloat() - 1).toInt()
-            _highlightingState.value = _highlightingState.value.copy(
-                currentWordIndexInFrame = 0, currentFrame = emptyList()
-            )
-            updateProgress()
             if (selectedBook is Book) {
+                currentWordIndex = value.coerceIn(0f, totalWords.toFloat() - 1).toInt()
+                _highlightingState.value = _highlightingState.value.copy(
+                    currentWordIndexInFrame = 0, currentFrame = emptyList()
+                )
+                updateProgress()
                 selectedBook = (selectedBook as? Book)?.copy(
                     lastPosition = currentWordIndex,
                     updated = System.currentTimeMillis()
                 )
             } else if (selectedBook is AudioBook) {
+                //todo:
+//                currentWordIndex = value.coerceIn(0f, audioBookPlayer.).toInt()
                 selectedBook = (selectedBook as? AudioBook)?.copy(
                     lastPosition = currentWordIndex,
                     updated = System.currentTimeMillis()
@@ -320,7 +360,7 @@ class PlayerViewModel @Inject constructor(
             _highlightingState.value = _highlightingState.value.copy(
                 currentWordIndexInFrame = 0, currentFrame = words.subList(currentWordIndex, toIndex)
             )
-            textToSpeech.speak(_highlightingState.value.currentFrame.joinToString(" "))
+            textToSpeech?.speak(_highlightingState.value.currentFrame.joinToString(" "))
         }
     }
 

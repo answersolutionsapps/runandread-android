@@ -19,6 +19,7 @@ sealed class BookSettingsEvent {
     data class SpeedSelected(val speed: Float) : BookSettingsEvent()
     data class PageSelected(val page: Int) : BookSettingsEvent()
     data class PlayVoiceSample(val language: Locale, val voice: Voice, val rate: Float) : BookSettingsEvent()
+    data object PlayAudioSample : BookSettingsEvent()
     data object DismissVoiceErrorDialog : BookSettingsEvent()
 }
 
@@ -42,7 +43,12 @@ fun BookSettingsEvent.onEvent(model: BookSettingsViewModel, onNavigateBack: (Run
         is BookSettingsEvent.VoiceSelected -> model.updateBookDetails(voiceIdentifier = this.voice.name)
         is BookSettingsEvent.SpeedSelected -> model.updateBookDetails(voiceRate = this.speed)
         is BookSettingsEvent.PageSelected -> model.onPageSelected(this.page)
-        is BookSettingsEvent.PlayVoiceSample -> model.payTextSample(this.language, this.voice, this.rate)
+        is BookSettingsEvent.PlayVoiceSample -> {
+                model.payTextSample(this.language, this.voice, this.rate)
+        }
+        is BookSettingsEvent.PlayAudioSample -> {
+             model.payAudioSample()
+        }
         is BookSettingsEvent.DismissVoiceErrorDialog -> model.dismissVoiceError()
     }
 }

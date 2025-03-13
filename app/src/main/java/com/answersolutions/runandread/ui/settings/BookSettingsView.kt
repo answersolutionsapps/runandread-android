@@ -267,11 +267,15 @@ fun BookSettingsScreenContent(
                             Spacer(Modifier.width(smallSpace))
                             IconButton(onClick = {
                                 onEvent(
-                                    BookSettingsEvent.PlayVoiceSample(
-                                        selectedLanguage,
-                                        selectedVoice.toVoice(),
-                                        selectedRate
-                                    )
+                                    if (bookState.book is Book) {
+                                        BookSettingsEvent.PlayVoiceSample(
+                                            selectedLanguage,
+                                            selectedVoice.toVoice(),
+                                            selectedRate
+                                        )
+                                    } else {
+                                        BookSettingsEvent.PlayAudioSample
+                                    }
                                 )
                             }) {
                                 Icon(
