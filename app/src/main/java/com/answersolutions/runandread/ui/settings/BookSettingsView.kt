@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -53,8 +54,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.answersolutions.runandread.data.model.AudioBook
 import com.answersolutions.runandread.data.model.Book
 import com.answersolutions.runandread.data.model.RunAndReadBook
+import com.answersolutions.runandread.data.model.TextPart
 import com.answersolutions.runandread.ui.components.NiceButton
 import com.answersolutions.runandread.ui.components.NiceButtonLarge
 import com.answersolutions.runandread.ui.settings.components.ConfirmDeleteDialog
@@ -75,15 +78,60 @@ import com.answersolutions.runandread.voice.toVoice
 import timber.log.Timber
 import java.util.Locale
 
+@Preview(showBackground = true)
+@Composable
+fun BookSettingsPreviewBook() {
+    RunAndReadTheme(darkTheme = false) {
+        BookSettingsScreenContent(
+            loading = false,
+            showVoiceError = false,
+            bookState = BookSettingsViewModel.BookUIState(
+                book = RunAndReadBook.stab().last(),
+                title = RunAndReadBook.stab().last().title,
+                author = RunAndReadBook.stab().last().author
+            ),
+            contextText = listOf(
+                "With this approach, you can now have selectable text in your view without allowing the user to modify the content. The text will be fully selectable, and users will be able to copy it to the clipboard by selecting and using the standard copy commands.",
+                "Lorem ipsum2",
+                "Lorem ipsum3"
+            ),
+            selectedPage = 0,
+            selectedLanguage = Locale.getDefault(),
+            availableLocales = listOf(),
+            recentLocales = listOf(),
+            availableVoices = listOf(),
+            selectedVoice = RunAndReadVoice("Voice 1", "en"),
+            selectedRate = 1f,
+            onEvent = {}
+        )
+    }
+}
 
 @Preview(showBackground = true)
 @Composable
-fun BookSettingsScreenPreview() {
+fun BookSettingsPreviewAudiobook() {
     RunAndReadTheme(darkTheme = true) {
         BookSettingsScreenContent(
             loading = false,
             showVoiceError = false,
             bookState = BookSettingsViewModel.BookUIState(
+                book = AudioBook(
+                    id = "0",
+                    title = "Moby Dick",
+                    author = "Herman Melville",
+                    language = "en",
+                    voiceRate = 1.25f,
+                    parts = listOf(
+                        TextPart(0, "Call me Ishmael."),
+                        TextPart(1, "Call me Ishmael.")
+                    ),
+                    lastPosition = 0,
+                    updated = System.currentTimeMillis(),
+                    audioFilePath = "",
+                    voice = "Kokoko",
+                    model = "Male, George",
+                    bookSource = "www.gutenberg.org"
+                ),
                 title = RunAndReadBook.stab().first().title,
                 author = RunAndReadBook.stab().first().author
             ),
@@ -106,6 +154,7 @@ fun BookSettingsScreenPreview() {
 
 @Composable
 fun BookSettingsScreenView(
+    onBookDeleted: () -> Unit,
     onNavigateBack: (RunAndReadBook?) -> Unit,
     viewModel: BookSettingsViewModel,
     voiceSelector: VoiceSelectorViewModel
@@ -118,7 +167,9 @@ fun BookSettingsScreenView(
     val bookState by viewModel.bookState.collectAsState()
     val viewState by viewModel.viewState.collectAsState()
     val showVoiceError = viewState.showVoiceError
-    val contextText = bookState.text
+    val contextText = bookState.text.ifEmpty {
+        bookState.parts.map { it.text }
+    }
     val selectedLanguage = bookState.language.toLocale()
     val selectedVoice = voiceSelector.nameToVoice(bookState.voiceIdentifier, bookState.language)
 
@@ -151,11 +202,10 @@ fun BookSettingsScreenView(
             },
             onDeleteClicked = {
                 if (pincode.value == "delete") {
-                    viewModel.onDelete()
+                    viewModel.onDelete(onBookDeleted)
                 }
             },
             onDismissRequest = {
-                viewModel.onShowDelete(false)
             }
         )
     }
@@ -232,19 +282,39 @@ fun BookSettingsScreenContent(
                         modifier = Modifier
                             .padding()
                     ) {
-                        Text(
-                            text = "Selected Language",
-                            style = scTypography.titleMedium,
-                            color = colorScheme.onSurface,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(Modifier.height(smallSpace))
-                        NiceButton(
-                            title = selectedLanguage.displayName,
-                            clickHandler = {
-                                showLanguageDialog.value = true
-                            },
-                        )
+                        if (bookState.book is Book) {
+                            Text(
+                                text = "Selected Language",
+                                style = scTypography.titleMedium,
+                                color = colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(Modifier.height(smallSpace))
+                            NiceButton(
+                                title = selectedLanguage.displayName,
+                                clickHandler = {
+                                    showLanguageDialog.value = true
+                                },
+                            )
+                        } else if (bookState.book is AudioBook){
+                            val book = bookState.book
+                            Text(
+                                text = "Book's Language",
+                                style = scTypography.titleMedium,
+                                color = colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(Modifier.height(smallSpace))
+                            val locale = Locale(book.language)
+                            Text(
+                                text = "${locale.displayLanguage} (${locale.displayCountry})",
+                                style = scTypography.titleLarge,
+                                color = colorScheme.onSurface,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(top = smallSpace)
+                            )
+                        }
+
                         Spacer(Modifier.height(normalSpace))
                         SpeechSpeedSelector(
                             defaultSpeed = selectedRate,
@@ -258,13 +328,24 @@ fun BookSettingsScreenContent(
                         )
                         Spacer(Modifier.height(smallSpace))
                         Row {
-                            NiceButton(
-                                title = selectedVoice.name,
-                                clickHandler = {
-                                    showVoiceDialog.value = true
-                                },
-                            )
-                            Spacer(Modifier.width(smallSpace))
+                            if (bookState.book is Book) {
+                                NiceButton(
+                                    title = selectedVoice.name,
+                                    clickHandler = {
+                                        showVoiceDialog.value = true
+                                    },
+                                )
+                                Spacer(Modifier.width(smallSpace))
+                            } else if (bookState.book is AudioBook){
+                                val book = bookState.book
+                                Text(
+                                    text = book.model + "\n" + book.voice,
+                                    style = scTypography.titleLarge,
+                                    color = colorScheme.onSurface,
+                                    textAlign = TextAlign.Start,
+                                    modifier = Modifier.padding(top = smallSpace)
+                                )
+                            }
                             IconButton(onClick = {
                                 onEvent(
                                     if (bookState.book is Book) {
@@ -280,22 +361,51 @@ fun BookSettingsScreenContent(
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.PlayCircleOutline,
-                                    contentDescription = null,
-                                    tint = colorScheme.primary
+                                    contentDescription = "play/stop sample",
+                                    tint = colorScheme.primary,
+                                    modifier = Modifier.size(44.dp)
                                 )
                             }
 
                         }
                         Spacer(Modifier.height(normalSpace))
                         HorizontalDivider(color = colorScheme.onSurface)
+                        if (bookState.book is AudioBook) {
+                            Spacer(Modifier.height(normalSpace))
+                            val book = bookState.book
+                            Text(
+                                text = "Book source",
+                                style = scTypography.titleMedium,
+                                color = colorScheme.onSurface,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(Modifier.height(smallSpace))
+                            Text(
+                                text = book.bookSource,
+                                style = scTypography.titleLarge,
+                                color = colorScheme.onSurface,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(top = smallSpace)
+                            )
+                            Spacer(Modifier.height(normalSpace))
+                            HorizontalDivider(color = colorScheme.onSurface)
+                        }
                         Spacer(Modifier.height(normalSpace))
-                        Text(
-                            text = "Select number of Pages to skip",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = colorScheme.onSurface,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-
+                        if (bookState.book is Book) {
+                            Text(
+                                text = "Select number of Pages to skip",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = colorScheme.onSurface,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        } else {
+                            Text(
+                                text = "Text Preview",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = colorScheme.onSurface,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        }
                         HorizontalPageListView(
                             selectedPage = selectedPage,
                             totalPages = contextText.size,

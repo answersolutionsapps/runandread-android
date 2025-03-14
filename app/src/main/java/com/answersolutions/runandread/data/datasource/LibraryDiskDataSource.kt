@@ -13,6 +13,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 import javax.inject.Singleton
 
 @Singleton
@@ -65,15 +66,27 @@ class LibraryDiskDataSource @Inject constructor(@ApplicationContext private val 
         }
     }
 
-    //todo: pass whole book to determine what to delete
-    override suspend fun deleteBook(bookId: String) {
-//        if (book.playerType() == BookPlayerType.AUDIO) {
-//            val bookFile = File(libraryDir, "$bookId.json")
-//            bookFile.delete()
-//        } else {
-            val bookFile = File(libraryDir, "$bookId.json")
-            bookFile.delete()
-//        }
+    override suspend fun deleteBook(book: RunAndReadBook) {
+        try {
+            if (book is AudioBook) {
+                val mp3File = File(book.audioFilePath)
+                val bookFile = File(audiobooksDir, "${book.id}.json")
+                Timber.d("deleteBook=>${bookFile.absolutePath}")
+                mp3File.delete()
+                Timber.d("${book.audioFilePath} - has been deleted")
+                bookFile.delete()
+                Timber.d("${bookFile.absolutePath} - has been deleted")
+            } else {
+                val bookFile = File(libraryDir, "${book.id}.json")
+                Timber.d("deleteBook=>${bookFile.absolutePath}")
+                bookFile.delete()
+                Timber.d("${bookFile.absolutePath} - has been deleted")
+            }
+        } catch (e: Exception) {
+            Timber.e(e)
+        }
+
+        unselectBook()
     }
 
     private val selectedDir: File

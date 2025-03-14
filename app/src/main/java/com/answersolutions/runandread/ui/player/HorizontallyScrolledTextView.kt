@@ -31,6 +31,7 @@ import java.util.Locale
 fun HorizontallyScrolledTextViewPreviewDark() {
     RunAndReadTheme(darkTheme = true) {
         HorizontallyScrolledTextView(
+            highLight=true,
             words = listOf("Hello", "Compose", "Preview", "How", "Are", "You", "Doing", "Today"),
             index = 1,
             Locale.getDefault()
@@ -44,6 +45,7 @@ fun HorizontallyScrolledTextViewPreviewDark() {
 fun HorizontallyScrolledTextViewPreview() {
     RunAndReadTheme(darkTheme = false) {
         HorizontallyScrolledTextView(
+            highLight=false,
             words = listOf("Hello", "Compose", "Preview", "How", "Are", "You", "Doing", "Today"),
             index = 1,
             Locale.getDefault()
@@ -56,6 +58,7 @@ fun HorizontallyScrolledTextViewPreview() {
 fun HorizontallyScrolledTextViewPreviewRTL() {
     RunAndReadTheme(darkTheme = false) {
         HorizontallyScrolledTextView(
+            highLight=true,
             words = listOf("שלום", "כתוב", "תצוגה מקדימה", "איך", "אתה", "עושה", "היום"),
             index = 4,
             Locale("iw", "IL")
@@ -64,7 +67,9 @@ fun HorizontallyScrolledTextViewPreviewRTL() {
 }
 
 @Composable
-fun HorizontallyScrolledTextView(words: List<String>, index: Int, language: Locale) {
+fun HorizontallyScrolledTextView(
+    highLight: Boolean = true,
+    words: List<String>, index: Int, language: Locale) {
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val isRTL = TextUtils.getLayoutDirectionFromLocale(language) == LAYOUT_DIRECTION_RTL
@@ -92,8 +97,8 @@ fun HorizontallyScrolledTextView(words: List<String>, index: Int, language: Loca
             ) {
                 itemsIndexed(words) { i, word ->
                     val isSelected = (i == index - 1)
-                    val backgroundColor = if (isSelected) colorScheme.primary else Color.Transparent
-                    val textColor = if (isSelected) colorScheme.surface else colorScheme.onSurface
+                    val backgroundColor = if (isSelected && highLight) colorScheme.primary else Color.Transparent
+                    val textColor = if (isSelected&& highLight) colorScheme.surface else colorScheme.onSurface
 
                     Box(
                         modifier = Modifier
@@ -104,7 +109,7 @@ fun HorizontallyScrolledTextView(words: List<String>, index: Int, language: Loca
                             text = word,
                             style = TextStyle(
                                 fontSize = 20.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                fontWeight = if (isSelected&& highLight) FontWeight.Bold else FontWeight.Normal,
                                 color = textColor,
                                 textAlign = TextAlign.Center
                             )

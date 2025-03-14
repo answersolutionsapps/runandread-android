@@ -81,12 +81,12 @@ class LibraryScreenViewModel @Inject constructor(
         }
     }
 
-    fun deleteBook(bookId: String) {
-        viewModelScope.launch {
-            libraryRepository.deleteBook(bookId)
-            loadBooks()
-        }
-    }
+//    fun deleteBook(bookId: String) {
+//        viewModelScope.launch {
+//            libraryRepository.deleteBook(bookId)
+//            loadBooks()
+//        }
+//    }
 
     fun loadEBookFromUri(uri: Uri, onLoaded:(EBookFile?)-> Unit) {
         viewModelScope.launch {

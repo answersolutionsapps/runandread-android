@@ -16,6 +16,11 @@ class NavigationViewModel @Inject constructor() : ViewModel() {
     private val _navigationEvents = MutableSharedFlow<NavigationCommand>()
     private val navigationEvents: SharedFlow<NavigationCommand> = _navigationEvents.asSharedFlow()
 
+    fun resetAndNavigateTo(screen: Screen) {
+        viewModelScope.launch {
+            _navigationEvents.emit(NavigationCommand.ResetAndNavigate(screen))
+        }
+    }
 
     fun navigateTo(screen: Screen) {
         viewModelScope.launch {
@@ -35,8 +40,8 @@ class NavigationViewModel @Inject constructor() : ViewModel() {
                 when (command) {
                     is NavigationCommand.Navigate -> navController.navigate(command.screen.route)
                     is NavigationCommand.Back -> navController.popBackStack()
-                    is NavigationCommand.NavigateAndReset -> {
-//todo
+                    is NavigationCommand.ResetAndNavigate -> {
+                        navController.popBackStack(navController.graph.startDestinationId, inclusive = false)
                         navController.navigate(command.screen.route)
                     }
                 }
@@ -48,5 +53,5 @@ class NavigationViewModel @Inject constructor() : ViewModel() {
 sealed class NavigationCommand {
     data class Navigate(val screen: Screen) : NavigationCommand()
     data object Back : NavigationCommand()
-    data class NavigateAndReset(val screen: Screen) : NavigationCommand()
+    data class ResetAndNavigate(val screen: Screen) : NavigationCommand()
 }

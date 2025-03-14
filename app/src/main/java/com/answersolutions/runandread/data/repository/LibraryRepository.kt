@@ -12,7 +12,7 @@ interface LibraryRepository {
     fun getLibraryBooks(): Flow<List<RunAndReadBook>>
     suspend fun addBook(book: RunAndReadBook)
     suspend fun updateBook(book: RunAndReadBook)
-    suspend fun deleteBook(bookId: String)
+    suspend fun deleteBook(book: RunAndReadBook)
 
     suspend fun selectBook(bookId: String)
     suspend fun getSelectedBook(): RunAndReadBook?
@@ -39,7 +39,7 @@ class LibraryRepositoryImpl @Inject constructor(
 
     override suspend fun addBook(book: RunAndReadBook) = diskDataSource.addBook(book)
     override suspend fun updateBook(book: RunAndReadBook) = diskDataSource.updateBook(book)
-    override suspend fun deleteBook(bookId: String) = diskDataSource.deleteBook(bookId)
+    override suspend fun deleteBook(book: RunAndReadBook) = diskDataSource.deleteBook(book)
 
     override suspend fun selectBook(bookId: String) = diskDataSource.selectBook(bookId)
     override suspend fun getSelectedBook(): RunAndReadBook? = diskDataSource.getSelectedBook()

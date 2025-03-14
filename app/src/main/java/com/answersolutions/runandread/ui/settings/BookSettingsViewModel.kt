@@ -345,12 +345,22 @@ class BookSettingsViewModel @Inject constructor(
     }
 
     fun onShowDelete(show: Boolean) {
-        _viewState.value = _viewState.value.copy(showDeleteDialog = show)
+        viewModelScope.launch {
+            _viewState.value = _viewState.value.copy(showDeleteDialog = show)
+        }
     }
 
-    fun onDelete() {
-        // todo: implement deleting the book audio and text
-        println("onDelete clicked")
-        _viewState.value = _viewState.value.copy(showDeleteDialog = false)
+    fun onDelete(onBookDeleted: () -> Unit) {
+        viewModelScope.launch {
+            _viewState.value = _viewState.value.copy(showDeleteDialog = false)
+            withContext(Dispatchers.IO) {
+                _state.value.book?.let {
+                    repository.deleteBook(it)
+                }
+                withContext(Dispatchers.Main) {
+                    onBookDeleted()
+                }
+            }
+        }
     }
 }

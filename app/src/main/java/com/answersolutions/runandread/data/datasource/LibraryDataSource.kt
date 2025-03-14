@@ -15,7 +15,7 @@ interface LibraryDataSource {
 
     suspend fun addBook(book: RunAndReadBook)
     suspend fun updateBook(book: RunAndReadBook)
-    suspend fun deleteBook(bookId: String)
+    suspend fun deleteBook(book: RunAndReadBook)
 
      suspend fun selectBook(bookId: String)
      suspend fun getSelectedBook(): RunAndReadBook?
@@ -45,7 +45,7 @@ class LibraryAssetDataSource @Inject constructor(@ApplicationContext private val
 
     override suspend fun addBook(book: RunAndReadBook) = throw UnsupportedOperationException()
     override suspend fun updateBook(book: RunAndReadBook) = throw UnsupportedOperationException()
-    override suspend fun deleteBook(bookId: String) = throw UnsupportedOperationException()
+    override suspend fun deleteBook(book: RunAndReadBook) = throw UnsupportedOperationException()
 
     override suspend fun selectBook(bookId: String) = throw UnsupportedOperationException()
     override suspend fun getSelectedBook(): RunAndReadBook? = throw UnsupportedOperationException()

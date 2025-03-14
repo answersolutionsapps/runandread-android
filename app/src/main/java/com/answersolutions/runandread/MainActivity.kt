@@ -91,6 +91,9 @@ class MainActivity : ComponentActivity() {
                     }
                     composable(Screen.BookSettings.route) {
                         BookSettingsScreenView(
+                            onBookDeleted = {
+                                navigationViewModel.resetAndNavigateTo(Screen.Home)
+                            },
                             onNavigateBack = { book ->
                                 if (book == null) {//open file were canceled
                                     navigationViewModel.popBack()

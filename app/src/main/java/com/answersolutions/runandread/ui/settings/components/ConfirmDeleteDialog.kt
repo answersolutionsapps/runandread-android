@@ -90,12 +90,29 @@ fun ConfirmDeleteDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        confirmButton = { onDeleteClicked() },
-        dismissButton = { onDismissRequest() },
+        confirmButton = {
+            NiceButton(
+                enabled = buttonEnabled,
+                title = "DELETE",
+                titleColor = Color.White,
+                color = Color.Red,
+                modifier = Modifier.width(160.dp),
+                clickHandler = onDeleteClicked
+            )
+        },
+        dismissButton = {
+            NiceButton(
+                title = "Cancel",
+                color = Color.Gray,
+                titleColor = Color.White,
+                modifier = Modifier.width(160.dp),
+                clickHandler = onDismissRequest
+            )
+        },
         title = {
             Text(
                 text = "You cannot undo this action!",
-                style = MaterialTheme.typography.headlineSmall,
+                style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -105,8 +122,6 @@ fun ConfirmDeleteDialog(
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .height(480.dp)
-                    .width(640.dp)
                     .padding(
                         largeSpace
                     )
@@ -139,26 +154,6 @@ fun ConfirmDeleteDialog(
                         unfocusedBorderColor = Color.Gray
                     )
                 )
-                Spacer(modifier = Modifier.height(normalSpace))
-                Spacer(Modifier.weight(1f))
-                Row {
-                    NiceButton(
-                        enabled = buttonEnabled,
-                        title = "DELETE",
-                        titleColor = Color.White,
-                        color = Color.Red,
-                        modifier = Modifier.width(120.dp),
-                        clickHandler = onDeleteClicked
-                    )
-                    Spacer(Modifier.weight(1f))
-                    NiceButton(
-                        title = "Cancel",
-                        color = Color.Gray,
-                        titleColor = Color.White,
-                        modifier = Modifier.width(120.dp),
-                        clickHandler = onDismissRequest
-                    )
-                }
                 Spacer(modifier = Modifier.height(smallSpace))
             }
         }
