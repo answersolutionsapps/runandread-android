@@ -63,43 +63,43 @@ class BookSettingsViewModel @Inject constructor(
 
     fun payTextSample(language: Locale, voice: Voice, rate: Float) {
 
-       if(bookState.value.book is Book) {
-           val sampleText = currentPage().substring(0, min(currentPage().length, 100))
+        if (bookState.value.book is Book) {
+            val sampleText = currentPage().substring(0, min(currentPage().length, 100))
 
-           if (textToSpeech == null) {
-               textToSpeech = SimpleSpeechProvider(
-                   application,
-                   currentLocale = language,
-                   currentVoice = voice,
-                   speechRate = rate,
-                   speakingCallBack = object : SimpleSpeakingCallBack {
-                       override fun onError(utteranceId: String?, errorCode: Int) {
-                           Timber.d("textToSpeech=>1 onError=>$errorCode")
-                           if (errorCode == TextToSpeech.ERROR_NETWORK_TIMEOUT ||
-                               errorCode == TextToSpeech.ERROR_NETWORK ||
-                               errorCode == TextToSpeech.ERROR_SERVICE
-                           ) {
-                               Timber.e("Network error1, retrying with offline voice...")
-                               // Retry with offline voices or notify the user
-                               viewModelScope.launch {
-                                   _viewState.emit(_viewState.value.copy(showVoiceError = true))
-                               }
-                           }
-                       }
-                   }
-               )
-           }
-           if (textToSpeech?.isSpeaking() == true) {
-               textToSpeech?.stop()
-           } else {
-               textToSpeech?.updateLocale(language, voice, rate)
-               textToSpeech?.speak(sampleText)
-           }
-       }
+            if (textToSpeech == null) {
+                textToSpeech = SimpleSpeechProvider(
+                    application,
+                    currentLocale = language,
+                    currentVoice = voice,
+                    speechRate = rate,
+                    speakingCallBack = object : SimpleSpeakingCallBack {
+                        override fun onError(utteranceId: String?, errorCode: Int) {
+                            Timber.d("textToSpeech=>1 onError=>$errorCode")
+                            if (errorCode == TextToSpeech.ERROR_NETWORK_TIMEOUT ||
+                                errorCode == TextToSpeech.ERROR_NETWORK ||
+                                errorCode == TextToSpeech.ERROR_SERVICE
+                            ) {
+                                Timber.e("Network error1, retrying with offline voice...")
+                                // Retry with offline voices or notify the user
+                                viewModelScope.launch {
+                                    _viewState.emit(_viewState.value.copy(showVoiceError = true))
+                                }
+                            }
+                        }
+                    }
+                )
+            }
+            if (textToSpeech?.isSpeaking() == true) {
+                textToSpeech?.stop()
+            } else {
+                textToSpeech?.updateLocale(language, voice, rate)
+                textToSpeech?.speak(sampleText)
+            }
+        }
     }
 
     fun payAudioSample() {
-        if(bookState.value.book is AudioBook) {
+        if (bookState.value.book is AudioBook) {
             val book = (bookState.value.book as AudioBook)
             if (mediaPlayer == null) {
                 mediaPlayer = MediaPlayer().apply {
@@ -108,8 +108,12 @@ class BookSettingsViewModel @Inject constructor(
                 }
             }
 
-            if(mediaPlayer?.isPlaying == true) {
-                mediaPlayer?.pause()
+            if (mediaPlayer?.isPlaying == true) {
+                mediaPlayer?.apply {
+                    stop()
+                    release()
+                }
+                mediaPlayer = null
             } else {
                 mediaPlayer?.apply {
                     playbackParams = playbackParams.setSpeed(bookState.value.voiceRate)
@@ -145,13 +149,13 @@ class BookSettingsViewModel @Inject constructor(
 
         val audioPath: String = "",
         val parts: List<TextPart> = emptyList(),
-        val rate: Float = 1.0f,
         val voice: String = "",
         val model: String = "",
         val bookSource: String = ""
     )
 
     data class SettingsUIState(
+        val newBook: Boolean = false,
         val loading: Boolean = false,
         val showDeleteDialog: Boolean = false,
         val isSpeaking: Boolean = false,
@@ -167,8 +171,13 @@ class BookSettingsViewModel @Inject constructor(
 
 
     fun setUpBook() {
+        Timber.d("setUpBook=>")
         viewModelScope.launch {
-            _viewState.emit(_viewState.value.copy(loading = true)) // Immediate UI update
+            if (viewState.value.newBook) {
+                return@launch
+            }
+            _state.value = BookUIState()
+            _viewState.emit(SettingsUIState(newBook = false, loading = true)) // Immediate UI update
 
             val book = withContext(Dispatchers.IO) {
                 repository.getSelectedBook()
@@ -177,62 +186,98 @@ class BookSettingsViewModel @Inject constructor(
             recentSelections.forEach { selected ->
                 recentSelectionsL.push(value = selected)
             }
-
+            Timber.d("setUpBook=>${book?.voiceRate}")
             if (book is Book) {
-                _state.value = _state.value.copy(
-                    book = book,
-                    title = book.title,
-                    author = book.author,
-                    language = book.language,
-                    voiceIdentifier = book.voiceIdentifier,
-                    voiceRate = book.voiceRate,
-                    text = book.text
+                _state.emit(
+                    _state.value.copy(
+                        book = book,
+                        title = book.title,
+                        author = book.author,
+                        language = book.language,
+                        voiceIdentifier = book.voiceIdentifier,
+                        voiceRate = book.voiceRate,
+                        text = book.text,
+                        audioPath = "",
+                        parts = emptyList(),
+                        voice = "",
+                        model = ""
+                    )
                 )
             } else if (book is AudioBook) {
-                _state.value = _state.value.copy(
-                    book = book,
-                    title = book.title,
-                    author = book.author,
-                    language = book.language,
-                    voiceIdentifier = "",
-                    voiceRate = 1.0f,
-                    text = emptyList(),
-                    audioPath = book.audioFilePath,
-                    parts = book.parts,
-                    rate = book.voiceRate,
-                    voice = book.voice,
-                    model = book.model,
+                _state.emit(
+                    _state.value.copy(
+                        book = book,
+                        title = book.title,
+                        author = book.author,
+                        language = book.language,
+                        voiceIdentifier = "",
+                        voiceRate = book.voiceRate,
+                        text = emptyList(),
+                        audioPath = book.audioFilePath,
+                        parts = book.parts,
+                        voice = book.voice,
+                        model = book.model
+                    )
                 )
             }
-
             _viewState.emit(_viewState.value.copy(loading = false)) // Ensure loading indicator stops
         }
     }
 
-    private fun isAudioBook(): Boolean {
-        return _state.value.audioPath.isNotEmpty()
-    }
-
-
-    fun createANewBook(book: EBookFile?) {
+    fun createANewBook(ebook: EBookFile) {
         Timber.d("BookSettingsScreenView.createANewBook=>")
         viewModelScope.launch {
-            _state.value = _state.value.copy(
-                title = book?.title ?: "",
-                author = book?.author ?: "",
-                language = Locale.getDefault().languageId(),
-                voiceIdentifier = "en",
-                voiceRate = 1.0f,
-                text = book?.content ?: emptyList(),
 
-                audioPath = book?.audioPath ?: "",
-                parts = book?.text ?: emptyList(),
-                rate = book?.rate ?: 1.0f,
-                voice = book?.voice ?: "",
-                model = book?.model ?: "",
-                bookSource = book?.bookSource ?: ""
+            val language = if (ebook.audioPath.isNotEmpty()) {
+                ebook.language
+            } else {
+                Locale.getDefault().languageId()
+            }
+
+            val book = if (ebook.audioPath.isNotEmpty()) {
+                AudioBook(
+                    title = ebook.title,
+                    author = ebook.author,
+                    language = language,
+                    voiceRate = ebook.rate,
+                    audioFilePath = ebook.audioPath,
+                    parts = ebook.text,
+                    lastPosition = 0,
+                    voice = ebook.voice,
+                    model = ebook.model,
+                    bookSource = ebook.bookSource,
+                    updated = System.currentTimeMillis(),
+                    bookmarks = emptyList<Bookmark>().toMutableList()
+                )
+            } else {
+                Book(
+                    title = ebook.title,
+                    author = ebook.author,
+                    language = language,
+                    voiceIdentifier = "en",
+                    voiceRate = 1.0f,
+                    text = ebook.content,
+                    lastPosition = 0,
+                    updated = System.currentTimeMillis(),
+                    bookmarks = emptyList<Bookmark>().toMutableList(),
+                )
+            }
+            _state.value = _state.value.copy(
+                book = book,
+                title = ebook.title,
+                author = ebook.author,
+                language = language,
+                voiceIdentifier = "en",
+                voiceRate = ebook.rate,
+                text = ebook.content,
+
+                audioPath = ebook.audioPath,
+                parts = ebook.text,
+                voice = ebook.voice,
+                model = ebook.model,
+                bookSource = ebook.bookSource
             )
-            _viewState.emit(_viewState.value.copy(selectedPage = 0))
+            _viewState.value = SettingsUIState(newBook = true)
         }
     }
 
@@ -282,6 +327,7 @@ class BookSettingsViewModel @Inject constructor(
                                 text = bookState.value.text.subList(from, to),
                             )
                         }
+
                         is AudioBook -> {
                             it.copy(
                                 title = bookState.value.title,
@@ -290,41 +336,13 @@ class BookSettingsViewModel @Inject constructor(
                             )
                         }
                     }
-                    repository.updateBook(b)
-                } ?: run {
-                    val from = _viewState.value.selectedPage
-                    val to = bookState.value.text.lastIndex
 
-                    val book = if (bookState.value.audioPath.isNotEmpty()) {
-                        AudioBook(
-                            title = bookState.value.title,
-                            author = bookState.value.author,
-                            language = bookState.value.language,
-                            voiceRate = bookState.value.rate,
-                            audioFilePath= bookState.value.audioPath,
-                            parts = bookState.value.parts,
-                            lastPosition = 0,
-                            voice = bookState.value.voice,
-                            model = bookState.value.model,
-                            bookSource = bookState.value.bookSource,
-                            updated = System.currentTimeMillis(),
-                            bookmarks = emptyList<Bookmark>().toMutableList()
-                        )
+                    if (viewState.value.newBook) {
+                        repository.addBook(b)
+                        repository.selectBook(b.id)
                     } else {
-                        Book(
-                            title = bookState.value.title,
-                            author = bookState.value.author,
-                            language = bookState.value.language,
-                            voiceIdentifier = bookState.value.voiceIdentifier,
-                            voiceRate = bookState.value.voiceRate,
-                            text = bookState.value.text.subList(from, to),
-                            lastPosition = 0,
-                            updated = System.currentTimeMillis(),
-                            bookmarks = emptyList<Bookmark>().toMutableList(),
-                        )
+                        repository.updateBook(b)
                     }
-                    repository.addBook(book)
-                    repository.selectBook(book.id)
                 }
                 prefsStore.saveSelectedLanguages(recentSelectionsL.values)
             }
@@ -332,7 +350,11 @@ class BookSettingsViewModel @Inject constructor(
             // Back to UI thread
             completed()
             _viewState.value = _viewState.value.copy(loading = false)
-            mediaPlayer?.stop()
+            mediaPlayer?.apply {
+                stop()
+                release()
+            }
+            mediaPlayer = null
         }
     }
 

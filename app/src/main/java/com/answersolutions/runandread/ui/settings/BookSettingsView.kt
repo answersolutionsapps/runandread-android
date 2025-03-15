@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -119,7 +120,7 @@ fun BookSettingsPreviewAudiobook() {
                     id = "0",
                     title = "Moby Dick",
                     author = "Herman Melville",
-                    language = "en",
+                    language = "en_GB",
                     voiceRate = 1.25f,
                     parts = listOf(
                         TextPart(0, "Call me Ishmael."),
@@ -161,7 +162,6 @@ fun BookSettingsScreenView(
 ) {
     val voices by voiceSelector.availableVoices.collectAsState()
     val locales by voiceSelector.availableLocales.collectAsState()
-
     val recentLocales = viewModel.recentSelectionsL.values
 
     val bookState by viewModel.bookState.collectAsState()
@@ -172,6 +172,7 @@ fun BookSettingsScreenView(
     }
     val selectedLanguage = bookState.language.toLocale()
     val selectedVoice = voiceSelector.nameToVoice(bookState.voiceIdentifier, bookState.language)
+    val selectedRate = bookState.voiceRate
 
 
     LaunchedEffect(Unit) {
@@ -188,7 +189,7 @@ fun BookSettingsScreenView(
         recentLocales = recentLocales.toList(),
         availableLocales = locales.toList(),
         availableVoices = voices.toList(),
-        selectedRate = bookState.voiceRate,
+        selectedRate = selectedRate,
         selectedVoice = selectedVoice,
         onEvent = { it.onEvent(viewModel) { onNavigateBack(bookState.book) } }
     )
@@ -234,28 +235,28 @@ fun BookSettingsScreenContent(
                 TopAppBar(
                     title = { },
                     actions = {
-                        Text("Cancel",
-                            style = MaterialTheme.typography.titleMedium,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .clickable {
-                                    onEvent(BookSettingsEvent.Cancel)
-                                })
+                        TextButton (onClick = {onEvent(BookSettingsEvent.Cancel)}) {
+                            Text("Cancel",
+                                style = MaterialTheme.typography.titleLarge,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .padding(16.dp))
+                        }
                         Spacer(modifier = Modifier.weight(1F))
                         Text(
                             "Settings",
                             style = MaterialTheme.typography.titleLarge
                         )
                         Spacer(modifier = Modifier.weight(1F))
-                        Text("Save",
-                            style = MaterialTheme.typography.titleMedium,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .clickable {
-                                    onEvent(BookSettingsEvent.Save)
-                                })
+                        TextButton (onClick = {onEvent(BookSettingsEvent.Save)}) {
+                            Text("Save",
+                                style = MaterialTheme.typography.titleLarge,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .padding(16.dp))
+                        }
+
+
                     }
                 )
             },
@@ -305,7 +306,7 @@ fun BookSettingsScreenContent(
                                 textAlign = TextAlign.Center
                             )
                             Spacer(Modifier.height(smallSpace))
-                            val locale = Locale(book.language)
+                            val locale = book.language.toLocale()
                             Text(
                                 text = "${locale.displayLanguage} (${locale.displayCountry})",
                                 style = scTypography.titleLarge,

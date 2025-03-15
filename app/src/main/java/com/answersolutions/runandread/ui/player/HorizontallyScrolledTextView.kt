@@ -98,7 +98,7 @@ fun HorizontallyScrolledTextView(
                 itemsIndexed(words) { i, word ->
                     val isSelected = (i == index - 1)
                     val backgroundColor = if (isSelected && highLight) colorScheme.primary else Color.Transparent
-                    val textColor = if (isSelected&& highLight) colorScheme.surface else colorScheme.onSurface
+                    val textColor = if (isSelected && highLight) colorScheme.surface else colorScheme.onSurface
 
                     Box(
                         modifier = Modifier

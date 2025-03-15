@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
+import java.util.Locale
 
 @Composable
 fun SpeechSpeedSelector(
@@ -63,7 +64,7 @@ fun SpeechSpeedSelector(
                         }
                 ) {
                     Text(
-                        text = String.format("%.2f", speed),
+                        text = String.format(Locale.getDefault(),"%.2f", speed),
                         color = if (selectedSpeed == speed) MaterialTheme.colorScheme.surface else Color.Black,
                         style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.padding(8.dp)
