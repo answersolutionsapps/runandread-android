@@ -5,17 +5,16 @@ import android.content.Intent
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.answersolutions.extensions.formatSecondsToHMS
+import com.answersolutions.runandread.BookPlayer
 import com.answersolutions.runandread.audio.AudioBookPlayer
 import com.answersolutions.runandread.data.model.AudioBook
 import com.answersolutions.runandread.data.model.Book
-import com.answersolutions.runandread.data.model.Book.Companion.SECONDS_PER_CHARACTER
 import com.answersolutions.runandread.data.model.Bookmark
 import com.answersolutions.runandread.data.model.RunAndReadBook
 import com.answersolutions.runandread.data.repository.LibraryRepository
 import com.answersolutions.runandread.data.repository.VoiceRepository
 import com.answersolutions.runandread.voice.SpeakingCallBack
-import com.answersolutions.runandread.voice.SpeechProvider
+import com.answersolutions.runandread.voice.SpeechBookPlayer
 import com.answersolutions.runandread.voice.toVoice
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -25,51 +24,97 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import timber.log.Timber
-import java.util.Locale
 import javax.inject.Inject
-import kotlin.math.max
-import kotlin.math.min
+
+object TextTimeRelationsTools {
+    fun getCurrentWordIndex(
+        elapsedSeconds: Double,
+        words: List<String>,
+        currentStartTime: Int,
+        nextStartTime: Int
+    ): Int {
+        // Compute duration between parts in seconds
+        val durationBetweenParts = (nextStartTime - currentStartTime)
+
+        // Prevent division by zero if words list is empty
+        if (words.isEmpty() || durationBetweenParts <= 0) return 0
+
+        // Approximate time per word
+        val millisecondsPerWord = durationBetweenParts / words.size
+
+        // Calculate relative time within the current segment
+        val relativeTimeInSegment = (elapsedSeconds * 1000.0) - (currentStartTime)
+
+        // Compute word index, ensuring it's within valid bounds
+        return relativeTimeInSegment.div(millisecondsPerWord).toInt().coerceIn(0, words.size - 1)
+    }
+
+    fun getCurrentBookmarkText(
+        elapsedSeconds: Double,
+        currentText: String,
+        currentStartTime: Int,
+        nextStartTime: Int,
+        nextText: String?,
+    ): String {
+        // Calculate duration between text parts in seconds
+        val durationBetweenPartsMs = (nextStartTime - currentStartTime)
+
+        // Split text into words, removing empty ones
+        val words = currentText.split(Regex("\\s+")).filter { it.isNotEmpty() }
+        val nextWords = nextText?.split(Regex("\\s+"))?.filter { it.isNotEmpty() } ?: emptyList()
+
+        // Prevent division by zero if words list is empty
+        if (words.isEmpty() || durationBetweenPartsMs <= 0) return ""
+
+        // Approximate time per word
+        val millisecondsPerWord = durationBetweenPartsMs / words.size
+
+        // Calculate relative elapsed time within the current segment
+        val relativeTimeInSegment = (elapsedSeconds * 1000.0) - currentStartTime
+
+        // Compute the word index, ensuring it's within valid bounds
+        val wordIndex =
+            relativeTimeInSegment.div(millisecondsPerWord).toInt().coerceIn(0, words.size - 1)
+
+        // Bookmark offsets (Replace with actual values from TextToSpeechPlayer)
+        val bookmarkOffset = 10
+        val bookmarkTextLength = 30
+        val extendedText = words + nextWords
+        // Determine start and end indices for bookmark text
+        val startIndex = (wordIndex - bookmarkOffset).coerceAtLeast(0)
+        val endIndex = (startIndex + bookmarkTextLength).coerceAtMost(extendedText.size)
+
+        // Join words into a substring for bookmark preview
+        return extendedText.subList(startIndex, endIndex).joinToString(" ")
+    }
+}
 
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
     @ApplicationContext private val application: Context,
     private val repository: VoiceRepository,
     private val libraryRepository: LibraryRepository
-) : ViewModel() {
+) : ViewModel(), SpeakingCallBack {
 
-    companion object {
-        private const val FRAME_SIZE = 100
-        private const val SEEK_STEP = 60
-    }
-
-    var selectedBook: RunAndReadBook? = null
+    override var book: RunAndReadBook? = null
+    private var player: BookPlayer? = null
 
     fun saveBookChanges() {
         viewModelScope.launch {
-            selectedBook?.let {
+            book?.let {
                 libraryRepository.updateBook(it)
             }
         }
     }
 
-    private var textToSpeech: SpeechProvider? = null
-    private var audioBookPlayer: AudioBookPlayer? = null
-
-    private var words = listOf<String>()
-    private var selectedSpeechRate: Float = 1f
-    private var currentWordIndex = 0
-
-    private var totalWords: Int = 0
-    private var totalTime: Double = 0.0
-
     data class PlayerUIState(
+        val totalTime: Double = 0.0,
         val isSpeaking: Boolean = false,
-        val spokenTextRange: IntRange = 0..0,
         val progress: Float = 0f,
         val progressTime: String = "00:00",
         val totalTimeString: String = "00:00",
-        val bookmarks: List<Bookmark> = emptyList()
+        val bookmarks: List<Bookmark> = emptyList(),
+        val sliderRange: ClosedFloatingPointRange<Float> = 0f..0f
     )
 
     data class HighlightingUIState(
@@ -78,289 +123,137 @@ class PlayerViewModel @Inject constructor(
 
 
     private val _highlightingState = MutableStateFlow(HighlightingUIState())
-    val highlightingState: StateFlow<HighlightingUIState> get() = _highlightingState.asStateFlow()
+    override val highlightingState: StateFlow<HighlightingUIState> get() = _highlightingState.asStateFlow()
+
+    override fun onUpdateHighlightingUI(state: HighlightingUIState) {
+        viewModelScope.launch {
+            _highlightingState.emit(state)
+        }
+    }
 
     private val _state = MutableStateFlow(PlayerUIState())
-    val viewState: StateFlow<PlayerUIState> get() = _state.asStateFlow()
+    override val viewState: StateFlow<PlayerUIState> get() = _state.asStateFlow()
+    override fun onUpdateUI(state: PlayerUIState) {
+        viewModelScope.launch {
+            _state.emit(state)
+        }
+    }
 
     fun setUpBook() {
         viewModelScope.launch {
-            selectedBook = withContext(Dispatchers.IO) {
+            _highlightingState.value = HighlightingUIState()
+            _state.value = PlayerUIState()
+
+            book = withContext(Dispatchers.IO) {
                 libraryRepository.getSelectedBook()
             }
-
-            selectedBook?.let { book ->
-                val selectedLanguage = Locale(book.language)
-
-                if (book is Book) {
-                    val voice = repository.nameToVoice(book.voiceIdentifier, book.language)
-                    words = book.text.flatMap { it.split("\\s+".toRegex()) }
-                        .mapNotNull { it.takeIf { it.isNotEmpty() } }
-
-                    totalWords = words.size
-                    selectedSpeechRate = book.voiceRate
-
-                    totalTime = calculateElapsedTime(totalWords - 1)
-
-                    withContext(Dispatchers.Main) {
-                        _highlightingState.value =
-                            _highlightingState.value.copy(currentWordIndexInFrame = 0)
-                        _state.value =
-                            _state.value.copy(totalTimeString = totalTime.formatSecondsToHMS(),
-                                bookmarks = book.bookmarks.map {
-                                    it.title = titleForBookmark(it.position); it
-                                })
-                        updatePosition(book.lastPosition.toFloat())
-                        textToSpeech = SpeechProvider(
+            book?.let { book ->
+                player = when (book) {
+                    is Book -> {
+                        val voice =
+                            repository.nameToVoice(book.voiceIdentifier, book.language)
+                        SpeechBookPlayer(
                             application,
-                            currentLocale = selectedLanguage,
-                            currentVoice = voice.toVoice(),
-                            speechRate = selectedSpeechRate,
-                            callBack = speechRangeCallBack,
-                            speakingCallBack = speakingCallBack
+                            voice = voice.toVoice(),
+                            speakingCallback = this@PlayerViewModel
                         )
                     }
-                } else if (book is AudioBook) {
-                    book.lazyCalculate {
-                        _state.value =
-                            _state.value.copy(
-                                totalTimeString = book.viewState.value.totalTime,
-                                progressTime = book.viewState.value.progressTime
-                            )
-                    }
-                    withContext(Dispatchers.Main) {
-                        audioBookPlayer = AudioBookPlayer(
-                            filePath = book.audioFilePath,
-                            playbackRate = book.voiceRate,
-                            listener = object : AudioBookPlayer.PlayerListener {
-                                override fun onStart() {
-                                    _state.value = _state.value.copy(isSpeaking = true)
-                                }
 
-                                override fun onPause() {
-                                    _state.value = _state.value.copy(isSpeaking = false)
-                                }
-
-                                override fun onCompleted() {
-                                    _state.value = _state.value.copy(isSpeaking = false)
-                                }
-
-                                override fun onProgressUpdate(progress: Int, duration: Int) {
-                                    println("Progress: $progress / $duration seconds")
-                                    _state.value = _state.value.copy(
-                                        progress = progress.toFloat(),
-                                        progressTime = progress.toDouble().formatSecondsToHMS()
-                                    )
-                                }
-                            }
-                        )
-                        updatePosition(book.lastPosition.toFloat())
-                    }
+                    is AudioBook -> AudioBookPlayer(
+                        application,
+                        speakingCallback = this@PlayerViewModel
+                    )
                 }
             }
         }
     }
 
-    private fun titleForBookmark(position: Int): String {
-        val from = max(0, position - 5)
-        val to = min(words.size - 1, position + 10)
-
-        if (to <= words.size && words.isNotEmpty()) {
-            val t = words.subList(from, to)
-            return t.joinToString(" ")
-        } else {
-            return "Unknown Bookmark"
-        }
-    }
 
     fun deleteBookmark(bookmark: Bookmark) {
-        Timber.d("Deleting bookmark at position: ${bookmark.position}")
-        Timber.d("Before delete, bookmarks size: ${selectedBook?.bookmarks?.size}")
-
         viewModelScope.launch {
-            selectedBook?.let { book ->
-                val updatedBookmarks = book.bookmarks.filter { it.position != bookmark.position }
-                book.bookmarks.clear()
-                book.bookmarks.addAll(updatedBookmarks)
-
-                _state.value = _state.value.copy(bookmarks = updatedBookmarks)
-
-                Timber.d("After delete, bookmarks size: ${book.bookmarks.size}")
-            } ?: Timber.w("No selected book found")
+            player?.onDeleteBookmark(bookmark)
         }
     }
 
     fun playFromBookmark(position: Int) {
-        if (selectedBook is Book) {
-            textToSpeech?.stop()
-            updatePosition(position.toFloat())
-            speak()
-        } else {
-            //todo:
+        viewModelScope.launch {
+            player?.onPlayFromBookmark(position)
         }
-    }
-
-    fun sliderRange(): ClosedFloatingPointRange<Float> {
-        return 0f..words.count().toFloat()
     }
 
     fun speak() {
-        if (selectedBook is Book) {
-            if (isSpeaking()) return
-            val toIndex = minOf(currentWordIndex + FRAME_SIZE, totalWords - 1)
-            _highlightingState.value = _highlightingState.value.copy(
-                currentWordIndexInFrame = 0, currentFrame = words.subList(currentWordIndex, toIndex)
-            )
-
-            textToSpeech?.speak(_highlightingState.value.currentFrame.joinToString(" "))
-        } else {
-            audioBookPlayer?.play()
+        viewModelScope.launch {
+            player?.onPlay()
         }
     }
 
-    fun isSpeaking(): Boolean {
-        return if (selectedBook is Book) {
-            textToSpeech?.isSpeaking() == true
-        } else {
-            audioBookPlayer?.isPlaying() == true
+    fun closePlayer() {
+        viewModelScope.launch {
+            player?.onClose()
         }
     }
 
     fun stopSpeaking() {
         viewModelScope.launch {
-            if (selectedBook is Book) {
-                textToSpeech?.stop()
-            } else {
-                audioBookPlayer?.pause()
-            }
+            player?.onStopSpeaking()
         }
-    }
-
-    private val speechRangeCallBack: (range: IntRange) -> Unit = { range ->
-        if (_highlightingState.value.currentWordIndexInFrame < _highlightingState.value.currentFrame.size - 1) {
-            _state.value = _state.value.copy(
-                spokenTextRange = range
-            )
-            currentWordIndex += 1
-            _highlightingState.value =
-                _highlightingState.value.copy(currentWordIndexInFrame = _highlightingState.value.currentWordIndexInFrame + 1)
-            val secondsElapsed = (words.take(currentWordIndex)
-                .joinToString(" ").length * SECONDS_PER_CHARACTER) / selectedSpeechRate.toDouble()
-
-            _state.value = _state.value.copy(
-                progress = currentWordIndex.toFloat(),
-                progressTime = secondsElapsed.formatSecondsToHMS()
-            )
-            if (selectedBook is Book) {
-                selectedBook = (selectedBook as? Book)?.copy(lastPosition = currentWordIndex)
-            } else if (selectedBook is AudioBook) {
-                selectedBook = (selectedBook as? AudioBook)?.copy(lastPosition = currentWordIndex)
-            }
-
-            playbackProgressCallBack(
-                secondsElapsed.toLong() * 1000, totalTime.toLong() * 1000, isSpeaking()
-            )
-        }
-    }
-
-    fun currentTimeElapsed(): Long {
-        val secondsElapsed = (words.take(currentWordIndex)
-            .joinToString(" ").length * SECONDS_PER_CHARACTER) / selectedSpeechRate.toDouble()
-
-        return secondsElapsed.toLong() * 1000L
     }
 
     fun saveBookmark() {
         viewModelScope.launch {
-            selectedBook?.bookmarks?.add(Bookmark(currentWordIndex))
-            _state.value = _state.value.copy(
-                bookmarks = selectedBook?.bookmarks?.map {
-                    if (it.title.isEmpty()) {
-                        it.title = titleForBookmark(it.position)
-                    }; it
-                } ?: emptyList(),
-            )
+            player?.onSaveBookmark()
         }
     }
 
-    fun fastForward() = seek(SEEK_STEP)
-    fun fastRewind() = seek(-SEEK_STEP)
+    fun fastForward() = player?.onFastForward()
+    fun fastRewind() = player?.onRewind()
 
-    private fun seek(offset: Int) {
-        if (selectedBook is Book) {
-            textToSpeech?.stop()
-            updatePosition(currentWordIndex.toFloat() + offset)
-            speak()
-        } else {
-            audioBookPlayer?.stop()
-            audioBookPlayer?.fastForward(offset)
-        }
-    }
 
-    fun updatePosition(value: Float) {
+    fun onSliderValueChange(value: Float) {
         viewModelScope.launch {
-            if (selectedBook is Book) {
-                currentWordIndex = value.coerceIn(0f, totalWords.toFloat() - 1).toInt()
-                _highlightingState.value = _highlightingState.value.copy(
-                    currentWordIndexInFrame = 0, currentFrame = emptyList()
-                )
-                updateProgress()
-                selectedBook = (selectedBook as? Book)?.copy(
-                    lastPosition = currentWordIndex,
-                    updated = System.currentTimeMillis()
-                )
-            } else if (selectedBook is AudioBook) {
-                //todo:
-//                currentWordIndex = value.coerceIn(0f, audioBookPlayer.).toInt()
-                selectedBook = (selectedBook as? AudioBook)?.copy(
-                    lastPosition = currentWordIndex,
-                    updated = System.currentTimeMillis()
-                )
-            }
-
+            player?.onUserChangePosition(value)
         }
     }
 
-    private fun updateProgress() {
-        val elapsedSeconds = calculateElapsedTime(progress = currentWordIndex)
-        _state.value = _state.value.copy(
-            progress = currentWordIndex.toFloat(),
-            progressTime = elapsedSeconds.formatSecondsToHMS()
-        )
-    }
-
-    private fun calculateElapsedTime(progress: Int): Double {
-        val chars = words.take(progress).joinToString(" ").length
-        val seconds = (chars * SECONDS_PER_CHARACTER) / selectedSpeechRate
-        return seconds
-    }
-
-    private val speakingCallBack = object : SpeakingCallBack {
-        override fun onStop() = resetSpeakingState()
-
-        override fun onDone() {
-            if (currentWordIndex < totalWords - 1) {
-                currentWordIndex++
-                playNextFrame()
-            } else resetSpeakingState()
+    override fun onCompleted() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isSpeaking = false)
         }
+    }
 
-        override fun onStart() {
+    override fun onStop() = resetSpeakingState()
+
+    override fun onReady(uiState: PlayerUIState) {
+        viewModelScope.launch {
+            _state.value = uiState
+        }
+    }
+
+    override fun onStart() {
+        viewModelScope.launch {
             _state.value = _state.value.copy(isSpeaking = true)
         }
+    }
 
-        private fun resetSpeakingState() {
-            viewModelScope.launch {
-                _state.value = _state.value.copy(isSpeaking = false)
-            }
+    override fun onProgressUpdate(
+        updatedBook: RunAndReadBook,
+        pUIState: PlayerUIState,
+        hUIState: HighlightingUIState
+    ) {
+        viewModelScope.launch {
+            book = updatedBook
+            _state.value = pUIState
+            _highlightingState.value = hUIState
+            playbackProgressCallBack(
+                _state.value.progress.toLong(), _state.value.totalTime.toLong() * 1000, _state.value.isSpeaking
+            )
         }
 
-        private fun playNextFrame() {
-            val toIndex = minOf(currentWordIndex + FRAME_SIZE, totalWords - 1)
-            _highlightingState.value = _highlightingState.value.copy(
-                currentWordIndexInFrame = 0, currentFrame = words.subList(currentWordIndex, toIndex)
-            )
-            textToSpeech?.speak(_highlightingState.value.currentFrame.joinToString(" "))
+    }
+
+    private fun resetSpeakingState() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isSpeaking = false)
         }
     }
 
@@ -381,4 +274,7 @@ class PlayerViewModel @Inject constructor(
 
     var playbackProgressCallBack: (Long, Long, Boolean) -> Unit = { _, _, _ -> }
 
+    fun currentTimeElapsed(): Long {
+        return player?.currentTimeElapsed() ?: 0
+    }
 }

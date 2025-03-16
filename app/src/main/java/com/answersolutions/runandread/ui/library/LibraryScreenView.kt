@@ -56,8 +56,8 @@ import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 fun LibraryScreenPreview() {
     RunAndReadTheme {
         LibraryScreenContent(
-            books = RunAndReadBook.stab(),
-            filterBooks = RunAndReadBook.stab(),
+            books = RunAndReadBook.sampleBooks(),
+            filterBooks = RunAndReadBook.sampleBooks(),
             filterText = "",
             onAboutClicked = {},
             onNewBookClicked = {},
@@ -81,7 +81,7 @@ fun LibraryScreenView(
     viewModel: LibraryScreenViewModel,
     onSelect: (RunAndReadBook) -> Unit,
     onAboutClicked: () -> Unit,
-    onFileSelected:(EBookFile)->Unit
+    onFileSelected: (EBookFile) -> Unit
 ) {
     val books by viewModel.libraryBooks.collectAsState(initial = emptyList())
     val isLoading = viewModel.viewState.collectAsState().value.loading
@@ -92,19 +92,21 @@ fun LibraryScreenView(
     var expanded by remember { mutableStateOf(false) }
 
     // File Picker Launcher
-    val launcher =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            uri?.let {
-                viewModel.loadEBookFromUri(it) { selected->
-                    selected?.let {
-                        onFileSelected(selected)
-                    }?: run {
-                        Toast.makeText(context, "Wrong file is selected, please try a different book!", Toast.LENGTH_SHORT).show()
-
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
+            val validExtensions = listOf(".pdf", ".epub", ".txt", ".randr")
+            if (validExtensions.any { ext -> it.toString().endsWith(ext, ignoreCase = true) }) {
+                viewModel.loadEBookFromUri(it) { selected ->
+                    selected?.let { onFileSelected(selected) } ?: run {
+                        Toast.makeText(context, "Invalid file selected. Please choose a valid book! \n [.pdf, .epub, .txt, .randr]", Toast.LENGTH_SHORT).show()
                     }
                 }
+            } else {
+                Toast.makeText(context, "Invalid file selected. Please choose a valid book! \n" +
+                        " [.pdf, .epub, .txt, .randr]", Toast.LENGTH_SHORT).show()
             }
         }
+    }
 
     LaunchedEffect("init") {
         viewModel.loadBooks()
@@ -144,7 +146,7 @@ fun LibraryScreenView(
             viewModel.loadEBookFromClipboard {
                 it?.let {
                     onFileSelected(it)
-                }?: run {
+                } ?: run {
                     Toast.makeText(context, "The clipboard is empty!", Toast.LENGTH_SHORT).show()
                 }
             }

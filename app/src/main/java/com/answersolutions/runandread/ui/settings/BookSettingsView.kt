@@ -87,9 +87,9 @@ fun BookSettingsPreviewBook() {
             loading = false,
             showVoiceError = false,
             bookState = BookSettingsViewModel.BookUIState(
-                book = RunAndReadBook.stab().last(),
-                title = RunAndReadBook.stab().last().title,
-                author = RunAndReadBook.stab().last().author
+                book = RunAndReadBook.sampleBooks().last(),
+                title = RunAndReadBook.sampleBooks().last().title,
+                author = RunAndReadBook.sampleBooks().last().author
             ),
             contextText = listOf(
                 "With this approach, you can now have selectable text in your view without allowing the user to modify the content. The text will be fully selectable, and users will be able to copy it to the clipboard by selecting and using the standard copy commands.",
@@ -133,8 +133,8 @@ fun BookSettingsPreviewAudiobook() {
                     model = "Male, George",
                     bookSource = "www.gutenberg.org"
                 ),
-                title = RunAndReadBook.stab().first().title,
-                author = RunAndReadBook.stab().first().author
+                title = RunAndReadBook.sampleBooks().first().title,
+                author = RunAndReadBook.sampleBooks().first().author
             ),
             contextText = listOf(
                 "With this approach, you can now have selectable text in your view without allowing the user to modify the content. The text will be fully selectable, and users will be able to copy it to the clipboard by selecting and using the standard copy commands.",

@@ -156,7 +156,7 @@ class PlayerService : Service() {
     private fun updatePlaybackState(position: Long, duration: Long, isPlaying: Boolean) {
         val state =
             if (isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
-        Timber.d("updatePlaybackState: $position, $duration, $isPlaying")
+//        Timber.d("updatePlaybackState: $position, $duration, $isPlaying")
         mediaSession.setPlaybackState(
             PlaybackStateCompat.Builder()
                 .setState(state, position, 1f) // Position updates
@@ -180,11 +180,11 @@ class PlayerService : Service() {
                 .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
                 .putString(
                     MediaMetadataCompat.METADATA_KEY_TITLE,
-                    playerViewModel?.selectedBook?.title ?: "Unknown"
+                    playerViewModel?.book?.title ?: "Unknown"
                 )
                 .putString(
                     MediaMetadataCompat.METADATA_KEY_AUTHOR,
-                    playerViewModel?.selectedBook?.author ?: "Unknown"
+                    playerViewModel?.book?.author ?: "Unknown"
                 )
                 .build()
         )
@@ -193,7 +193,7 @@ class PlayerService : Service() {
     }
 
     private fun updateNotification() {
-        playerViewModel?.selectedBook?.let {
+        playerViewModel?.book?.let {
             val playIntent = getServiceIntent(ACTION_PLAY, 1)
             val pauseIntent = getServiceIntent(ACTION_PAUSE, 2)
             val ffIntent = getServiceIntent(ACTION_FF, 3)

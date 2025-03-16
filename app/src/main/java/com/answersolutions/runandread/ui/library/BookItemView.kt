@@ -104,19 +104,19 @@ fun PreviewBookItemView() {
     RunAndReadTheme {
         Column(modifier = Modifier.background(MaterialTheme.colorScheme.background)) {
             BookItemView(
-                item = RunAndReadBook.stab().first().apply {
+                item = RunAndReadBook.sampleBooks().first().apply {
                     lazyCalculate {}
                 },
                 onSelect = { println("Book selected") }
             )
             HorizontalDivider()
             BookItemView(
-                item = RunAndReadBook.stab()[1],
+                item = RunAndReadBook.sampleBooks()[1],
                 onSelect = { println("Book selected") }
             )
             HorizontalDivider()
             BookItemView(
-                item = RunAndReadBook.stab().last(),
+                item = RunAndReadBook.sampleBooks().last(),
                 onSelect = { println("Book selected") }
             )
         }

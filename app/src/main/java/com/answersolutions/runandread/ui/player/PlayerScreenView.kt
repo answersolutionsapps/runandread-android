@@ -1,9 +1,11 @@
 package com.answersolutions.runandread.ui.player
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,6 +23,8 @@ import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -31,6 +35,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
@@ -43,6 +48,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -66,7 +72,7 @@ import java.util.Locale
 @Composable
 fun PlayerScreenPreview() {
     RunAndReadTheme(darkTheme = true) {
-        PlayerScreenContent(selectedBook = RunAndReadBook.stab().first(),
+        PlayerScreenContent(selectedBook = RunAndReadBook.sampleBooks().first(),
             bookmarks = listOf(
                 Bookmark(1, "Test 1 Test 1 Test 1 Test 1 Test 1 Test 1  Test 1"),
                 Bookmark(2, "Test 2"),
@@ -123,26 +129,25 @@ fun PlayerScreenView(
     val progress = uiState.value.progress
     val progressTime = uiState.value.progressTime
     val totalTimeString = uiState.value.totalTimeString
-    val spokenTextRange = uiState.value.spokenTextRange
-    val bookmarks = uiState.value.bookmarks
+    val bookmarks = uiState.value.bookmarks.sortedByDescending { it.position }
 
     val currentFrame = highlightingState.value.currentFrame
     val currentWordIndexInFrame = highlightingState.value.currentWordIndexInFrame
-
+    val selectedBook = viewModel.book
 
     PlayerScreenContent(
-        selectedBook = viewModel.selectedBook,
+        selectedBook = selectedBook,
         bookmarks = bookmarks,
         currentFrame = currentFrame,
         currentWordIndexInFrame = currentWordIndexInFrame,
         isSpeaking = isSpeaking,
         progressTime = progressTime,
         progress = progress,
-        sliderRange = viewModel.sliderRange(),
+        sliderRange = uiState.value.sliderRange,
         totalTime = totalTimeString,
-        onSliderValueChange = { viewModel.updatePosition(it) },
+        onSliderValueChange = { viewModel.onSliderValueChange(it) },
         onPlayClick = {
-            if (viewModel.isSpeaking()) {
+            if (isSpeaking) {
                 viewModel.stopSpeaking()
                 viewModel.stopPlaybackService()
             } else {
@@ -160,7 +165,7 @@ fun PlayerScreenView(
         onAddBookmark = { viewModel.saveBookmark() },
         onBackToLibrary = onBackToLibrary,
         onSettings = {
-            viewModel.selectedBook?.let(onSettings)
+            viewModel.book?.let(onSettings)
         },
         onBookmarkClick = { position ->
             viewModel.playFromBookmark(position.toInt())
@@ -169,6 +174,19 @@ fun PlayerScreenView(
             viewModel.deleteBookmark(bookmark)
         }
     )
+    if (totalTimeString.isEmpty()||totalTimeString.endsWith("00:00")) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Color(0xcF7f7f7f))
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                color = colorScheme.primary
+            )
+
+        }
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     val lifecycleObserver = remember(lifecycleOwner) {
@@ -191,7 +209,7 @@ fun PlayerScreenView(
         lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
-            viewModel.stopSpeaking()
+            viewModel.closePlayer()
             viewModel.saveBookChanges()
         }
     }
@@ -225,23 +243,20 @@ fun PlayerScreenContent(
             TopAppBar(
                 title = { },
                 actions = {
-                    Text("Library",
-                        style = MaterialTheme.typography.titleMedium,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .clickable {
-                                onBackToLibrary()
-                            })
+                    TextButton (onClick = {onBackToLibrary()}) {
+                        Text("Library",
+                            style = MaterialTheme.typography.titleLarge,
+                            textAlign = TextAlign.Center)
+                    }
+
                     Spacer(modifier = Modifier.weight(1F))
-                    Text("Edit",
-                        style = MaterialTheme.typography.titleMedium,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .clickable {
-                                onSettings()
-                            })
+                    TextButton (onClick = {onSettings()}) {
+                        Text(
+                            "Edit",
+                            style = MaterialTheme.typography.titleLarge,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             )
         },
@@ -368,6 +383,7 @@ fun PlayerScreenContent(
                 }
                 HorizontalDivider()
                 HorizontallyScrolledTextView(
+                    highLight = selectedBook is Book,
                     words = currentFrame,
                     index = currentWordIndexInFrame,
                     language = selectedBook?.language?.toLocale() ?: Locale.getDefault()
