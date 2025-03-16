@@ -45,7 +45,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.answersolutions.runandread.data.model.Book
 import com.answersolutions.runandread.data.model.EBookFile
 import com.answersolutions.runandread.data.model.RunAndReadBook
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme

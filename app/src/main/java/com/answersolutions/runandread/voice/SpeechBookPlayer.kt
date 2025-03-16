@@ -179,7 +179,7 @@ class SpeechBookPlayer(
     }
 
     fun speak(text: String) {
-        val utteranceId = "my_utterance_id"//UUID.randomUUID().toString()
+        val utteranceId = "my_utterance_id"
         val params = Bundle().apply {
             putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
         }
