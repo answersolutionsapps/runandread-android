@@ -28,6 +28,8 @@ class LibraryScreenViewModel @Inject constructor(
 
     data class LibraryScreenUIState(
         val loading: Boolean = false,
+        val showNewBookPicker: Boolean = false,
+        val filterText: String = ""
     )
 
     private val _viewState = MutableStateFlow(LibraryScreenUIState())
@@ -49,6 +51,18 @@ class LibraryScreenViewModel @Inject constructor(
         }
     }
 
+    fun onShowNewBookPicker(show: Boolean) {
+        viewModelScope.launch {
+            _viewState.value = _viewState.value.copy(showNewBookPicker = show)
+        }
+    }
+
+    fun onFilterWithText(text: String) {
+        viewModelScope.launch {
+            _viewState.value = _viewState.value.copy(filterText = text)
+        }
+    }
+
     fun onUnselectBook() {
         viewModelScope.launch {
             libraryRepository.unselectBook()
@@ -62,6 +76,8 @@ class LibraryScreenViewModel @Inject constructor(
             onLoaded(fileRepository.getEBookFileFromUri(uri))
             _viewState.emit(_viewState.value.copy(loading = false))
         }
+
+
     }
 
     fun loadEBookFromClipboard(onLoaded:(EBookFile?)-> Unit) {

@@ -172,7 +172,7 @@ fun PlayerScreenView(
             viewModel.deleteBookmark(bookmark)
         }
     )
-    if (totalTimeString.isEmpty()||totalTimeString.endsWith("00:00")) {
+    if (totalTimeString.isEmpty() || totalTimeString.endsWith("00:00")) {
         Box(
             Modifier
                 .fillMaxSize()

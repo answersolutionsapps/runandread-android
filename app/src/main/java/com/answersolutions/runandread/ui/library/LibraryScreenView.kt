@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -55,21 +56,13 @@ import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 fun LibraryScreenPreview() {
     RunAndReadTheme {
         LibraryScreenContent(
+            uiState = LibraryScreenViewModel.LibraryScreenUIState(
+                filterText = "",
+                showNewBookPicker = false,
+            ),
             books = RunAndReadBook.sampleBooks(),
             filterBooks = RunAndReadBook.sampleBooks(),
-            filterText = "",
-            onAboutClicked = {},
-            onNewBookClicked = {},
-            onFilterWithText = {},
-            onSelect = {},
-            expanded = false,
-            onDismissRequest = {
-            },
-            onFileOptionSelected = {
-
-            },
-            onClipboardOptionSelected = {
-
+            onEvent = {
             }
         )
     }
@@ -83,75 +76,54 @@ fun LibraryScreenView(
     onFileSelected: (EBookFile) -> Unit
 ) {
     val books by viewModel.libraryBooks.collectAsState(initial = emptyList())
-    val isLoading = viewModel.viewState.collectAsState().value.loading
-    var filterText by remember { mutableStateOf("") }
+    val uiState by viewModel.viewState.collectAsState()
     var filterBooks by remember { mutableStateOf(emptyList<RunAndReadBook>()) }
 
     val context = LocalContext.current
-    var expanded by remember { mutableStateOf(false) }
 
     // File Picker Launcher
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let {
-            val validExtensions = listOf(".pdf", ".epub", ".txt", ".randr")
-            if (validExtensions.any { ext -> it.toString().endsWith(ext, ignoreCase = true) }) {
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            uri?.let {
                 viewModel.loadEBookFromUri(it) { selected ->
                     selected?.let { onFileSelected(selected) } ?: run {
                         Toast.makeText(context, "Invalid file selected. Please choose a valid book! \n [.pdf, .epub, .txt, .randr]", Toast.LENGTH_SHORT).show()
                     }
                 }
-            } else {
-                Toast.makeText(context, "Invalid file selected. Please choose a valid book! \n" +
-                        " [.pdf, .epub, .txt, .randr]", Toast.LENGTH_SHORT).show()
             }
         }
-    }
 
     LaunchedEffect("init") {
         viewModel.loadBooks()
     }
 
-    filterBooks = if (filterText.isNotEmpty()) {
+    filterBooks = if (uiState.filterText.isNotEmpty()) {
         books.filter {
-            it.title.contains(filterText, true) ||
-                    it.author.contains(filterText, true)
+            it.title.contains(uiState.filterText, true) ||
+                    it.author.contains(uiState.filterText, true)
         }.sortedByDescending { it.updated }
     } else {
         books.sortedByDescending { it.updated }
     }
 
     LibraryScreenContent(
+        uiState = uiState,
         books = books,
         filterBooks = filterBooks,
-        filterText = filterText,
-        onAboutClicked = onAboutClicked,
-        onNewBookClicked = {
-            expanded = true
-        },
-        onFilterWithText = { filterText = it },
-        onSelect = onSelect,
-        expanded = expanded,
-        onDismissRequest = {
-            expanded = false
-        },
-        onFileOptionSelected = {
-            expanded = false
-            // File picker only allows RANDR, EPUB, TXT, and PDF files
-            launcher.launch(arrayOf("*/*"))
-//            launcher.launch(arrayOf("application/zip", "application/epub+zip", "text/plain", "application/pdf"))
-        },
-        onClipboardOptionSelected = {
-            expanded = false
-            viewModel.loadEBookFromClipboard {
-                it?.let {
-                    onFileSelected(it)
-                } ?: run {
-                    Toast.makeText(context, "The clipboard is empty!", Toast.LENGTH_SHORT).show()
-                }
-            }
+        onEvent = { event ->
+            event.onEvent(
+                context,
+                viewModel,
+                onSelect = onSelect,
+                onAboutClicked = onAboutClicked,
+                onFileSelected = onFileSelected,
+                onLauncher = {
+                    // File picker only allows RANDR, EPUB, TXT, and PDF files
+                    launcher.launch(arrayOf("*/*"))
+                })
         }
     )
-    if (isLoading) {
+    if (uiState.loading) {
         Box(
             Modifier
                 .fillMaxSize()
@@ -169,41 +141,39 @@ fun LibraryScreenView(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryScreenContent(
+    uiState: LibraryScreenViewModel.LibraryScreenUIState,
     books: List<RunAndReadBook>,
     filterBooks: List<RunAndReadBook>,
-    filterText: String,
-//    isLoading: Boolean,
-    onAboutClicked: () -> Unit,
-    onNewBookClicked: () -> Unit,
-    onFilterWithText: (String) -> Unit,
-    onSelect: (RunAndReadBook) -> Unit,
-    expanded: Boolean,
-    onDismissRequest: () -> Unit,
-    onFileOptionSelected: () -> Unit,
-    onClipboardOptionSelected: () -> Unit,
+    onEvent: (LibraryScreenEvents) -> Unit
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Eyes-Free Library") },
                 actions = {
-                    IconButton(onClick = onAboutClicked) {
-                        Icon(Icons.Default.Info, contentDescription = "About")
+                    IconButton(onClick = { onEvent(LibraryScreenEvents.AboutClicked) }) {
+                        Icon(
+                            Icons.Default.Info, contentDescription = "About",
+                            modifier = Modifier.size(32.dp)
+                        )
                     }
                     Spacer(modifier = Modifier.weight(1F))
                     Text("Eyes-Free Library", style = MaterialTheme.typography.titleLarge)
                     Spacer(modifier = Modifier.weight(1F))
                     Column {
-                        IconButton(onClick = onNewBookClicked) {
-                            Icon(Icons.Default.Add, contentDescription = "Add")
+                        IconButton(onClick = { onEvent(LibraryScreenEvents.NewBookClicked) }) {
+                            Icon(
+                                Icons.Default.Add, contentDescription = "Add",
+                                modifier = Modifier.size(32.dp)
+                            )
                         }
                         DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = onDismissRequest
+                            expanded = uiState.showNewBookPicker,
+                            onDismissRequest = { onEvent(LibraryScreenEvents.DismissRequest) }
                         ) {
                             DropdownMenuItem(
                                 text = { Text("From File") },
-                                onClick = onFileOptionSelected,
+                                onClick = { onEvent(LibraryScreenEvents.FileOptionSelected) },
                                 leadingIcon = {
                                     Icon(
                                         Icons.Default.FolderOpen,
@@ -213,7 +183,7 @@ fun LibraryScreenContent(
                             )
                             DropdownMenuItem(
                                 text = { Text("From Clipboard") },
-                                onClick = onClipboardOptionSelected,
+                                onClick = { onEvent(LibraryScreenEvents.ClipboardOptionSelected) },
                                 leadingIcon = {
                                     Icon(
                                         Icons.Default.ContentPaste,
@@ -228,7 +198,9 @@ fun LibraryScreenContent(
         },
         content = { padding ->
             Column(Modifier.padding(padding)) {
-                SearchBar(text = filterText, onTextChanged = onFilterWithText)
+                SearchBar(
+                    text = uiState.filterText,
+                    onTextChanged = { onEvent(LibraryScreenEvents.FilterWithText(it)) })
 
                 if (books.isEmpty()) {
                     EmptyLibraryView()
@@ -243,7 +215,7 @@ fun LibraryScreenContent(
                             BookItemView(
                                 item = book,
                                 onSelect = {
-                                    onSelect(book)
+                                    onEvent(LibraryScreenEvents.SelectBook(book))
                                 }
                             )
                         }

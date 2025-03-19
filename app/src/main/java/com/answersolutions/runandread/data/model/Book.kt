@@ -43,7 +43,7 @@ data class Book(
 
             withContext(Dispatchers.Main) {
                 _state.value = BookUIState(
-                    isCompleted = (lastPosition + 1) >= wordsCount,
+                    isCompleted = (lastPosition + 5) >= wordsCount,
                     isCalculating = false,
                     progressTime = elapsedSeconds.formatSecondsToHMS(),
                     totalTime = totalSeconds.formatSecondsToHMS(),

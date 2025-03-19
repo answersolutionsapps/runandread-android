@@ -18,13 +18,13 @@ sealed class BookSettingsEvent {
     data class VoiceSelected(val voice: RunAndReadVoice) : BookSettingsEvent()
     data class SpeedSelected(val speed: Float) : BookSettingsEvent()
     data class PageSelected(val page: Int) : BookSettingsEvent()
-    data class PlayVoiceSample(val language: Locale, val voice: Voice, val rate: Float) : BookSettingsEvent()
+    data class PlayVoiceSample(val language: Locale, val voice: Voice?, val rate: Float) : BookSettingsEvent()
     data object PlayAudioSample : BookSettingsEvent()
     data object DismissVoiceErrorDialog : BookSettingsEvent()
 }
 
 fun BookSettingsEvent.onEvent(model: BookSettingsViewModel, onNavigateBack: (RunAndReadBook?) -> Unit) {
-    Timber.d("BookSettingsScreenView.onEvent=>${this}")
+//    Timber.d("BookSettingsScreenView.onEvent=>${this}")
     when (this) {
         is BookSettingsEvent.TitleChanged -> model.updateBookDetails(title = this.title)
         is BookSettingsEvent.AuthorChanged -> model.updateBookDetails(author = this.author)

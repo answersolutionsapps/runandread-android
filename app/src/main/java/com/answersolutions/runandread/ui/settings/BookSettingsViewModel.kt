@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.MediaPlayer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.Voice
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.answersolutions.runandread.data.datasource.PrefsStore
@@ -17,6 +18,7 @@ import com.answersolutions.runandread.data.model.TextPart
 import com.answersolutions.runandread.voice.SimpleSpeakingCallBack
 import com.answersolutions.runandread.voice.SimpleSpeechProvider
 import com.answersolutions.runandread.voice.languageId
+import com.answersolutions.runandread.voice.toLocale
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -61,41 +63,50 @@ class BookSettingsViewModel @Inject constructor(
     private var mediaPlayer: MediaPlayer? = null
     val recentSelectionsL: LimitedDictionary = LimitedDictionary(limit = 5U)
 
-    fun payTextSample(language: Locale, voice: Voice, rate: Float) {
+    fun payTextSample(language: Locale, voice: Voice?, rate: Float) {
+        voice?.let {
+            if (bookState.value.book is Book) {
+                val sampleText = currentPage().substring(0, min(currentPage().length, 100))
 
-        if (bookState.value.book is Book) {
-            val sampleText = currentPage().substring(0, min(currentPage().length, 100))
-
-            if (textToSpeech == null) {
-                textToSpeech = SimpleSpeechProvider(
-                    application,
-                    currentLocale = language,
-                    currentVoice = voice,
-                    speechRate = rate,
-                    speakingCallBack = object : SimpleSpeakingCallBack {
-                        override fun onError(utteranceId: String?, errorCode: Int) {
-                            Timber.d("textToSpeech=>1 onError=>$errorCode")
-                            if (errorCode == TextToSpeech.ERROR_NETWORK_TIMEOUT ||
-                                errorCode == TextToSpeech.ERROR_NETWORK ||
-                                errorCode == TextToSpeech.ERROR_SERVICE
-                            ) {
-                                Timber.e("Network error1, retrying with offline voice...")
-                                // Retry with offline voices or notify the user
-                                viewModelScope.launch {
-                                    _viewState.emit(_viewState.value.copy(showVoiceError = true))
+                if (textToSpeech == null) {
+                    textToSpeech = SimpleSpeechProvider(
+                        application,
+                        currentLocale = language,
+                        currentVoice = voice,
+                        speechRate = rate,
+                        speakingCallBack = object : SimpleSpeakingCallBack {
+                            override fun onError(utteranceId: String?, errorCode: Int) {
+                                Timber.d("textToSpeech=>1 onError=>$errorCode")
+                                if (errorCode == TextToSpeech.ERROR_NETWORK_TIMEOUT ||
+                                    errorCode == TextToSpeech.ERROR_NETWORK ||
+                                    errorCode == TextToSpeech.ERROR_SERVICE
+                                ) {
+                                    Timber.e("Network error1, retrying with offline voice...")
+                                    // Retry with offline voices or notify the user
+                                    viewModelScope.launch {
+                                        _viewState.emit(_viewState.value.copy(showVoiceError = true))
+                                    }
                                 }
                             }
                         }
-                    }
-                )
+                    )
+                }
+                if (textToSpeech?.isSpeaking() == true) {
+                    textToSpeech?.stop()
+                } else {
+                    textToSpeech?.updateLocale(language, voice, rate)
+                    textToSpeech?.speak(sampleText)
+                }
             }
-            if (textToSpeech?.isSpeaking() == true) {
-                textToSpeech?.stop()
-            } else {
-                textToSpeech?.updateLocale(language, voice, rate)
-                textToSpeech?.speak(sampleText)
-            }
+        }?: run {
+            Toast.makeText(
+                application,
+                "Please select a voice first!",
+                Toast.LENGTH_SHORT
+            ).show()
         }
+
+
     }
 
     fun payAudioSample() {
@@ -233,7 +244,6 @@ class BookSettingsViewModel @Inject constructor(
             } else {
                 Locale.getDefault().languageId()
             }
-
             val book = if (ebook.audioPath.isNotEmpty()) {
                 AudioBook(
                     title = ebook.title,
@@ -250,6 +260,7 @@ class BookSettingsViewModel @Inject constructor(
                     bookmarks = emptyList<Bookmark>().toMutableList()
                 )
             } else {
+
                 Book(
                     title = ebook.title,
                     author = ebook.author,
@@ -282,7 +293,7 @@ class BookSettingsViewModel @Inject constructor(
     }
 
     private fun currentPage(): String {
-        return if (viewState.value.selectedPage < _state.value.text.size - 1) {
+        return if (viewState.value.selectedPage <= _state.value.text.size - 1) {
             _state.value.text[viewState.value.selectedPage]
         } else "1, 2, 3, 4, 5, 5, 4, 3, 2, 1!"
     }
@@ -314,8 +325,14 @@ class BookSettingsViewModel @Inject constructor(
 
             withContext(Dispatchers.IO) {
                 _state.value.book?.let {
-                    val from = _viewState.value.selectedPage
-                    val to = bookState.value.text.lastIndex
+                    val text = if (bookState.value.text.size > 1) {
+                        val from = _viewState.value.selectedPage
+                        val to = bookState.value.text.lastIndex
+                        bookState.value.text.subList(from, to)
+                    } else {
+                        bookState.value.text
+                    }
+
                     val b = when (it) {
                         is Book -> {
                             it.copy(
@@ -324,7 +341,7 @@ class BookSettingsViewModel @Inject constructor(
                                 language = bookState.value.language,
                                 voiceIdentifier = bookState.value.voiceIdentifier,
                                 voiceRate = bookState.value.voiceRate,
-                                text = bookState.value.text.subList(from, to),
+                                text = text,
                             )
                         }
 

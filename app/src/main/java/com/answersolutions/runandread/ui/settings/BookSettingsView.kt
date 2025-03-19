@@ -414,7 +414,7 @@ fun BookSettingsScreenContent(
                         )
                         Spacer(Modifier.height(normalSpace))
                         BasicTextField(
-                            value = if (selectedPage < contextText.size - 1) {
+                            value = if (selectedPage <= contextText.size - 1) {
                                 contextText[selectedPage]
                             } else "",
                             textStyle = TextStyle(

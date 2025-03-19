@@ -28,6 +28,9 @@ import javax.inject.Inject
 class EBookDataSource @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
+    companion object {
+        val validExtensions = listOf(".pdf", ".epub", ".txt", ".randr")
+    }
 
     private suspend fun extractAudioBookFromRANDR(context: Context, fileUri: File): EBookFile = withContext(Dispatchers.IO) {
         val fileName = fileUri.name
@@ -157,7 +160,8 @@ class EBookDataSource @Inject constructor(
                     text,
                     audioPath = "",
                     emptyList<TextPart>(),
-                    language = "", rate = 1.0f,
+                    language = "",
+                    rate = 1.0f,
                     voice = "",
                     model = "",
                     bookSource = ""
@@ -199,7 +203,8 @@ class EBookDataSource @Inject constructor(
                 text,
                 audioPath = "",
                 emptyList<TextPart>(),
-                language = "", rate = 1.0f,
+                language = "",
+                rate = 1.0f,
                 voice = "",
                 model = "",
                 bookSource = ""
@@ -221,7 +226,8 @@ class EBookDataSource @Inject constructor(
                 text,
                 audioPath = "",
                 emptyList<TextPart>(),
-                language = "", rate = 1.0f,
+                language = "",
+                rate = 1.0f,
                 voice = "",
                 model = "",
                 bookSource = ""
@@ -242,16 +248,18 @@ class EBookDataSource @Inject constructor(
 
         Timber.d("fileName: $fileName")
 
-        context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            return@withContext when {
-                fileName.lowercase().endsWith(".randr") -> {
-                    val tempFile = File(context.cacheDir, fileName)
-                    tempFile.outputStream().use { output -> inputStream.copyTo(output) }
-                    extractAudioBookFromRANDR(context, tempFile)
+        if (validExtensions.any { ext -> fileName.endsWith(ext, ignoreCase = true) }) {
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                return@withContext when {
+                    fileName.lowercase().endsWith(".randr") -> {
+                        val tempFile = File(context.cacheDir, fileName)
+                        tempFile.outputStream().use { output -> inputStream.copyTo(output) }
+                        extractAudioBookFromRANDR(context, tempFile)
+                    }
+                    fileName.lowercase().endsWith(".pdf") -> extractPdfText(inputStream)
+                    fileName.lowercase().endsWith(".epub") -> extractEpubText(inputStream)
+                    else -> extractPlainText(inputStream)
                 }
-                fileName.lowercase().endsWith(".pdf") -> extractPdfText(inputStream)
-                fileName.lowercase().endsWith(".epub") -> extractEpubText(inputStream)
-                else -> extractPlainText(inputStream)
             }
         }
         return@withContext null
@@ -264,12 +272,13 @@ class EBookDataSource @Inject constructor(
         return@withContext if (!clipData.isNullOrBlank()) {
             Timber.d("Clipboard: $clipData")
             EBookFile(
-                "Clipboard Content",
-                "",
-                clipData.split("\n"),
+                title = "Clipboard Content",
+                author = "Unknown Author",
+                content = clipData.split("\n"),
                 audioPath = "",
-                emptyList<TextPart>(),
-                language = "", rate = 1.0f,
+                text = emptyList<TextPart>(),
+                language = "",
+                rate = 1.0f,
                 voice = "",
                 model = "",
                 bookSource = ""
