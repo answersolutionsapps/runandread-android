@@ -104,7 +104,7 @@ class AudioBookPlayer(
                                     )
                                     if(playOnReady) {
                                         playOnReady = false
-                                        onPlay()
+                                        onPlay(source = 2)
                                     }
                                 }
                             }
@@ -122,7 +122,7 @@ class AudioBookPlayer(
             }
     }
 
-    override fun onPlay() {
+    override fun onPlay(source: Int) {
 
         mediaPlayer?.apply {
             val book = speakingCallback.book as AudioBook
@@ -208,7 +208,7 @@ class AudioBookPlayer(
                             currentStartTime,
                             nextPartStartTime
                         )
-                        Timber.d("updatePosition.currentWordIndexInFrame: $currentWordIndexInFrame")
+//                        Timber.d("updatePosition.currentWordIndexInFrame: $currentWordIndexInFrame")
                         val hState = speakingCallback.highlightingState.value
                         speakingCallback.onProgressUpdate(
                             updatedBook = book.copy(
@@ -234,9 +234,9 @@ class AudioBookPlayer(
     override fun onUserChangePosition(value: Float) {
         this.isPlaying = false
         seekBeforePlay = true
+
         val book = speakingCallback.book as AudioBook
-        val elapsedSeconds = value
-        val elapsedTimeToShow = elapsedSeconds.toDouble().formatSecondsToHMS()
+        val elapsedTimeToShow = value.toDouble().formatSecondsToHMS()
         frame = emptyList()
         val hState = speakingCallback.highlightingState.value
         speakingCallback.onProgressUpdate(
@@ -245,7 +245,7 @@ class AudioBookPlayer(
                 updated = System.currentTimeMillis()
             ),
             speakingCallback.viewState.value.copy(
-                progress = elapsedSeconds,
+                progress = value,
                 progressTime = elapsedTimeToShow
             ),
             hState.copy(
@@ -259,7 +259,6 @@ class AudioBookPlayer(
         frame = emptyList()
         onStopSpeaking()
         mediaPlayer?.apply {
-
             pause()
             playOnReady = true
             seekTo((position * 1000L).coerceAtMost(mediaPlayer?.duration ?: 0L))

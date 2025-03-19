@@ -18,7 +18,6 @@ import com.answersolutions.runandread.data.model.TextPart
 import com.answersolutions.runandread.voice.SimpleSpeakingCallBack
 import com.answersolutions.runandread.voice.SimpleSpeechProvider
 import com.answersolutions.runandread.voice.languageId
-import com.answersolutions.runandread.voice.toLocale
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -140,14 +139,6 @@ class BookSettingsViewModel @Inject constructor(
         }
     }
 
-    fun isSpeaking(): Boolean {
-        return textToSpeech?.isSpeaking() == true
-    }
-
-    fun stopTTS() {
-        textToSpeech?.stop()
-    }
-
     data class BookUIState(
         val book: RunAndReadBook? = null,
         val title: String = "",
@@ -198,9 +189,10 @@ class BookSettingsViewModel @Inject constructor(
                 recentSelectionsL.push(value = selected)
             }
             Timber.d("setUpBook=>${book?.voiceRate}")
-            if (book is Book) {
-                _state.emit(
-                    _state.value.copy(
+
+            withContext(Dispatchers.Main) {
+                if (book is Book) {
+                    _state.value = _state.value.copy(
                         book = book,
                         title = book.title,
                         author = book.author,
@@ -213,10 +205,8 @@ class BookSettingsViewModel @Inject constructor(
                         voice = "",
                         model = ""
                     )
-                )
-            } else if (book is AudioBook) {
-                _state.emit(
-                    _state.value.copy(
+                } else if (book is AudioBook) {
+                    _state.value = _state.value.copy(
                         book = book,
                         title = book.title,
                         author = book.author,
@@ -229,9 +219,9 @@ class BookSettingsViewModel @Inject constructor(
                         voice = book.voice,
                         model = book.model
                     )
-                )
+                }
+                _viewState.emit(_viewState.value.copy(loading = false)) // Ensure loading indicator stops
             }
-            _viewState.emit(_viewState.value.copy(loading = false)) // Ensure loading indicator stops
         }
     }
 
@@ -325,16 +315,15 @@ class BookSettingsViewModel @Inject constructor(
 
             withContext(Dispatchers.IO) {
                 _state.value.book?.let {
-                    val text = if (bookState.value.text.size > 1) {
-                        val from = _viewState.value.selectedPage
-                        val to = bookState.value.text.lastIndex
-                        bookState.value.text.subList(from, to)
-                    } else {
-                        bookState.value.text
-                    }
-
                     val b = when (it) {
                         is Book -> {
+                            val text = if (bookState.value.text.size > 1) {
+                                val from = _viewState.value.selectedPage
+                                val to = bookState.value.text.lastIndex
+                                bookState.value.text.subList(from, to)
+                            } else {
+                                bookState.value.text
+                            }
                             it.copy(
                                 title = bookState.value.title,
                                 author = bookState.value.author,

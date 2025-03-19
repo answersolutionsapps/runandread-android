@@ -3,7 +3,7 @@ package com.answersolutions.runandread
 import com.answersolutions.runandread.data.model.Bookmark
 
 interface BookPlayer {
-    fun onPlay()
+    fun onPlay(source: Int)
     fun onPlayFromBookmark(position: Int)
     fun onStopSpeaking()
     fun onFastForward()

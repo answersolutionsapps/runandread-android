@@ -1,4 +1,4 @@
-package com.answersolutions.runandread.ui.player
+package com.answersolutions.runandread.ui.player.components
 
 import android.text.TextUtils
 import android.view.View.LAYOUT_DIRECTION_RTL

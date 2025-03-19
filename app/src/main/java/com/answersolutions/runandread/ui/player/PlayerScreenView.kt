@@ -2,7 +2,6 @@ package com.answersolutions.runandread.ui.player
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,13 +10,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkAdd
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
@@ -25,8 +20,6 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.material3.Scaffold
@@ -35,15 +28,12 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -58,6 +48,8 @@ import com.answersolutions.runandread.data.model.Book
 import com.answersolutions.runandread.data.model.Bookmark
 import com.answersolutions.runandread.data.model.RunAndReadBook
 import com.answersolutions.runandread.ui.components.NiceRoundButton
+import com.answersolutions.runandread.ui.player.components.BookmarksSectionView
+import com.answersolutions.runandread.ui.player.components.HorizontallyScrolledTextView
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 import com.answersolutions.runandread.ui.theme.doubleLargeSpace
 import com.answersolutions.runandread.ui.theme.largeSpace
@@ -70,42 +62,34 @@ import java.util.Locale
 @Composable
 fun PlayerScreenPreview() {
     RunAndReadTheme(darkTheme = true) {
-        PlayerScreenContent(selectedBook = RunAndReadBook.sampleBooks().first(),
-            bookmarks = listOf(
-                Bookmark(1, "Test 1 Test 1 Test 1 Test 1 Test 1 Test 1  Test 1"),
-                Bookmark(2, "Test 2"),
-                Bookmark(3, "Test 3"),
-                Bookmark(4, "Test 4"),
-                Bookmark(5, "Test 5"),
-                Bookmark(6, "Test 6"),
-                Bookmark(7, "Test 7"),
-                Bookmark(8, "Test 8"),
-                Bookmark(9, "Test 9"),
-                Bookmark(9, "Test 9"),
-                Bookmark(9, "Test 9"),
-                Bookmark(9, "Test 9"),
-                Bookmark(9, "Test 9")
+        PlayerScreenContent(
+            selectedBook = RunAndReadBook.sampleBooks().first(),
+            uiState = PlayerViewModel.PlayerUIState(
+                bookmarks = listOf(
+                    Bookmark(1, "Test 1 Test 1 Test 1 Test 1 Test 1 Test 1  Test 1"),
+                    Bookmark(2, "Test 2"),
+                    Bookmark(3, "Test 3"),
+                    Bookmark(4, "Test 4"),
+                    Bookmark(5, "Test 5"),
+                    Bookmark(6, "Test 6"),
+                    Bookmark(7, "Test 7"),
+                    Bookmark(8, "Test 8"),
+                    Bookmark(9, "Test 9"),
+                    Bookmark(9, "Test 9"),
+                    Bookmark(9, "Test 9"),
+                    Bookmark(9, "Test 9"),
+                    Bookmark(9, "Test 9")
+                ),
+                isSpeaking = true,
+                progressTime = "00:00",
+                progress = 100f,
+                totalTimeString = "00:00"
             ),
             currentFrame = listOf("Test 1", "Test 2", "Test 3"),
             currentWordIndexInFrame = 1,
-            isSpeaking = true,
-            progressTime = "00:00",
-            progress = 100f,
             sliderRange = 0f..1000f,
-            totalTime = "00:00",
-            onSliderValueChange = {},
-            onPlayClick = {
-
-            },
-            onFastForward = {},
-            onFastRewind = {},
-            onAddBookmark = {},
-            onBackToLibrary = {
-            }, onSettings = {
-            },
-            onBookmarkClick = { position ->
-
-            }, onDeleteBookmark = {})
+            onEvent = {}
+        )
     }
 }
 
@@ -121,58 +105,21 @@ fun PlayerScreenView(
         viewModel.setUpBook()
     }
 
-    val uiState = viewModel.viewState.collectAsState()
+    val uiState by viewModel.viewState.collectAsState()
     val highlightingState = viewModel.highlightingState.collectAsState()
-    val isSpeaking = uiState.value.isSpeaking
-    val progress = uiState.value.progress
-    val progressTime = uiState.value.progressTime
-    val totalTimeString = uiState.value.totalTimeString
-    val bookmarks = uiState.value.bookmarks.sortedByDescending { it.position }
-
     val currentFrame = highlightingState.value.currentFrame
     val currentWordIndexInFrame = highlightingState.value.currentWordIndexInFrame
     val selectedBook = viewModel.book
 
     PlayerScreenContent(
         selectedBook = selectedBook,
-        bookmarks = bookmarks,
+        uiState = uiState,
         currentFrame = currentFrame,
         currentWordIndexInFrame = currentWordIndexInFrame,
-        isSpeaking = isSpeaking,
-        progressTime = progressTime,
-        progress = progress,
-        sliderRange = uiState.value.sliderRange,
-        totalTime = totalTimeString,
-        onSliderValueChange = { viewModel.onSliderValueChange(it) },
-        onPlayClick = {
-            if (isSpeaking) {
-                viewModel.stopSpeaking()
-                viewModel.stopPlaybackService()
-            } else {
-                viewModel.speak()
-                viewModel.startPlaybackService()
-            }
-            onPlayback(0f)
-        },
-        onFastForward = {
-            viewModel.fastForward()
-        },
-        onFastRewind = {
-            viewModel.fastRewind()
-        },
-        onAddBookmark = { viewModel.saveBookmark() },
-        onBackToLibrary = onBackToLibrary,
-        onSettings = {
-            viewModel.book?.let(onSettings)
-        },
-        onBookmarkClick = { position ->
-            viewModel.playFromBookmark(position.toInt())
-        },
-        onDeleteBookmark = { bookmark ->
-            viewModel.deleteBookmark(bookmark)
-        }
+        sliderRange = uiState.sliderRange,
+        onEvent = { it.onEvent(viewModel, onSettings, onBackToLibrary, onPlayback) },
     )
-    if (totalTimeString.isEmpty() || totalTimeString.endsWith("00:00")) {
+    if (uiState.totalTimeString.isEmpty() || uiState.totalTimeString.endsWith("00:00")) {
         Box(
             Modifier
                 .fillMaxSize()
@@ -207,7 +154,7 @@ fun PlayerScreenView(
         lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
-            viewModel.closePlayer()
+            viewModel.onClose()
             viewModel.saveBookChanges()
         }
     }
@@ -218,37 +165,27 @@ fun PlayerScreenView(
 @Composable
 fun PlayerScreenContent(
     selectedBook: RunAndReadBook?,
-    bookmarks: List<Bookmark>,
+    uiState: PlayerViewModel.PlayerUIState,
     currentFrame: List<String>,
     currentWordIndexInFrame: Int,
-    isSpeaking: Boolean,
-    progressTime: String,
-    progress: Float,
     sliderRange: ClosedFloatingPointRange<Float>,
-    totalTime: String,
-    onSliderValueChange: (Float) -> Unit,
-    onPlayClick: () -> Unit,
-    onFastForward: () -> Unit,
-    onFastRewind: () -> Unit,
-    onAddBookmark: () -> Unit,
-    onBackToLibrary: () -> Unit,
-    onSettings: () -> Unit,
-    onBookmarkClick: (position: Float) -> Unit,
-    onDeleteBookmark: (Bookmark) -> Unit
+    onEvent: (PlayerEvent) -> Unit
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { },
                 actions = {
-                    TextButton (onClick = {onBackToLibrary()}) {
-                        Text("Library",
+                    TextButton(onClick = { onEvent(PlayerEvent.BackToLibrary) }) {
+                        Text(
+                            "Library",
                             style = MaterialTheme.typography.titleLarge,
-                            textAlign = TextAlign.Center)
+                            textAlign = TextAlign.Center
+                        )
                     }
 
                     Spacer(modifier = Modifier.weight(1F))
-                    TextButton (onClick = {onSettings()}) {
+                    TextButton(onClick = { onEvent(PlayerEvent.Settings) }) {
                         Text(
                             "Edit",
                             style = MaterialTheme.typography.titleLarge,
@@ -259,62 +196,15 @@ fun PlayerScreenContent(
             )
         },
         content = { padding ->
-            var selectedBookmark by remember { mutableStateOf<Bookmark?>(null) }
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                if (bookmarks.isNotEmpty()) {
-                    Column(modifier = Modifier.padding(horizontal = largeSpace)) {
-                        LazyColumn {
-                            items(bookmarks) { bookMark ->
-                                var showDelete by remember { mutableStateOf(false) }
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .combinedClickable(
-                                            onClick = { onBookmarkClick(bookMark.position.toFloat()) },
-                                            onLongClick = {
-                                                selectedBookmark = bookMark
-                                                showDelete = true
-                                            }
-                                        )
-                                        .padding(horizontal = 8.dp, vertical = 8.dp)
-                                ) {
-                                    Text(
-                                        text = bookMark.title,
-                                        maxLines = 2,
-                                        style = MaterialTheme.typography.titleLarge,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    if (showDelete && selectedBookmark == bookMark) {
-                                        VerticalDivider()
-                                        IconButton(
-                                            onClick = {
-                                                onDeleteBookmark(bookMark)
-                                                showDelete = false
-                                            },
-                                            modifier = Modifier
-                                                .align(Alignment.CenterVertically)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Delete,
-                                                contentDescription = "Delete",
-                                                tint = colorScheme.error,
-                                                modifier = Modifier.size(24.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                                HorizontalDivider()
-                            }
-                        }
-                    }
-
+                if (uiState.bookmarks.isNotEmpty()) {
+                    BookmarksSectionView(uiState, onEvent)
                 }
-
                 Spacer(modifier = Modifier.weight(1f))
                 HorizontalDivider()
             }
@@ -343,9 +233,11 @@ fun PlayerScreenContent(
                         )
                     ) {
                         Slider(
-                            value = progress,
+                            value = uiState.progress,
                             valueRange = sliderRange,
-                            onValueChange = onSliderValueChange,
+                            onValueChange = { value ->
+                                onEvent(PlayerEvent.SliderValueChange(value))
+                            },
                             colors = SliderDefaults.colors(
                                 thumbColor = colorScheme.primary,
                                 activeTrackColor = colorScheme.primary
@@ -354,14 +246,14 @@ fun PlayerScreenContent(
                         )
                         Row {
                             Text(
-                                text = progressTime,
+                                text = uiState.progressTime,
                                 maxLines = 1,
                                 color = colorScheme.tertiary,
                                 fontWeight = FontWeight.Normal
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             Text(
-                                text = totalTime,
+                                text = uiState.totalTimeString,
                                 maxLines = 1,
                                 color = colorScheme.tertiary,
                                 fontWeight = FontWeight.Normal
@@ -398,23 +290,28 @@ fun PlayerScreenContent(
                         contentDescription = "Fast Rewind",
                         icon = Icons.Filled.FastRewind,
                         diameter = 44.dp,
-                        clickHandler = onFastRewind
+                        clickHandler = { onEvent(PlayerEvent.FastRewind) }
                     )
                     Spacer(modifier = Modifier.width(smallSpace))
                     NiceRoundButton(
                         contentDescription = "Play and Pause",
-                        icon = if (isSpeaking) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        icon = if (uiState.isSpeaking) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                         backgroundColor = colorScheme.primary,
                         diameter = 64.dp,
                         scale = 2f,
-                        clickHandler = onPlayClick
+                        clickHandler = {
+                            if (uiState.isSpeaking)
+                                onEvent(PlayerEvent.PauseClick)
+                            else
+                                onEvent(PlayerEvent.PlayClick)
+                        }
                     )
                     Spacer(modifier = Modifier.width(smallSpace))
                     NiceRoundButton(
                         contentDescription = "Fast Forward",
                         icon = Icons.Filled.FastForward,
                         diameter = 44.dp,
-                        clickHandler = onFastForward
+                        clickHandler = { onEvent(PlayerEvent.FastForward) }
                     )
                 }
                 Row(
@@ -424,17 +321,16 @@ fun PlayerScreenContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     NiceRoundButton(
-                        enabled = isSpeaking,
+                        enabled = uiState.isSpeaking,
                         contentDescription = "Bookmark",
                         icon = Icons.Filled.BookmarkAdd,
                         diameter = 44.dp,
-                        clickHandler = onAddBookmark
+                        clickHandler = { onEvent(PlayerEvent.AddBookmark) }
                     )
                     Spacer(modifier = Modifier.width(smallSpace))
 
                 }
             }
-
         }
     )
 }

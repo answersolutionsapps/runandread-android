@@ -172,7 +172,7 @@ fun BookSettingsScreenView(
     }
     val selectedLanguage = bookState.language.toLocale()
     val selectedVoice = voiceSelector.nameToVoice(bookState.voiceIdentifier, bookState.language)
-    val selectedRate = bookState.voiceRate
+//    val selectedRate = bookState.voiceRate
 
 
     LaunchedEffect(Unit) {
@@ -189,7 +189,7 @@ fun BookSettingsScreenView(
         recentLocales = recentLocales.toList(),
         availableLocales = locales.toList(),
         availableVoices = voices.toList(),
-        selectedRate = selectedRate,
+        selectedRate = bookState.voiceRate,
         selectedVoice = selectedVoice,
         onEvent = { it.onEvent(viewModel) { onNavigateBack(bookState.book) } }
     )

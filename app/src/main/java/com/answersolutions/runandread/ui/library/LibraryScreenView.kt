@@ -48,6 +48,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.answersolutions.runandread.data.model.EBookFile
 import com.answersolutions.runandread.data.model.RunAndReadBook
+import com.answersolutions.runandread.ui.library.components.BookItemView
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 
 

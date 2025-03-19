@@ -13,6 +13,7 @@ import com.answersolutions.runandread.data.model.Bookmark
 import com.answersolutions.runandread.data.model.RunAndReadBook
 import com.answersolutions.runandread.data.repository.LibraryRepository
 import com.answersolutions.runandread.data.repository.VoiceRepository
+import com.answersolutions.runandread.services.PlayerService
 import com.answersolutions.runandread.voice.SpeakingCallBack
 import com.answersolutions.runandread.voice.SpeechBookPlayer
 import com.answersolutions.runandread.voice.toVoice
@@ -141,6 +142,7 @@ class PlayerViewModel @Inject constructor(
 
     fun setUpBook() {
         viewModelScope.launch {
+
             _highlightingState.value = HighlightingUIState()
             _state.value = PlayerUIState()
 
@@ -164,6 +166,7 @@ class PlayerViewModel @Inject constructor(
                         speakingCallback = this@PlayerViewModel
                     )
                 }
+                startPlaybackService()
             }
         }
     }
@@ -181,21 +184,19 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    fun speak() {
-        viewModelScope.launch {
-            player?.onPlay()
-        }
+    fun onPause() {
+        player?.onStopSpeaking()
     }
 
-    fun closePlayer() {
+    fun onPlay() {
+        player?.onPlay(source = 1)
+    }
+
+
+    fun onClose() {
         viewModelScope.launch {
+            stopPlaybackService()
             player?.onClose()
-        }
-    }
-
-    fun stopSpeaking() {
-        viewModelScope.launch {
-            player?.onStopSpeaking()
         }
     }
 
@@ -232,6 +233,7 @@ class PlayerViewModel @Inject constructor(
     override fun onStart() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isSpeaking = true)
+
         }
     }
 
@@ -245,7 +247,9 @@ class PlayerViewModel @Inject constructor(
             _state.value = pUIState
             _highlightingState.value = hUIState
             playbackProgressCallBack(
-                _state.value.progress.toLong(), _state.value.totalTime.toLong() * 1000, _state.value.isSpeaking
+                _state.value.progress.toLong(),
+                _state.value.totalTime.toLong(),
+                _state.value.isSpeaking
             )
         }
 
@@ -257,15 +261,15 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    fun startPlaybackService() {
+    private fun startPlaybackService() {
         val intent =
-            Intent(application, PlayerService::class.java).setAction(PlayerService.ACTION_PLAY)
+            Intent(application, PlayerService::class.java)
         //todo: find a better solution
         PlayerService.playerViewModel = this
         ContextCompat.startForegroundService(application, intent)
     }
 
-    fun stopPlaybackService() {
+    private fun stopPlaybackService() {
         val intent = Intent(
             application, PlayerService::class.java
         ).setAction(PlayerService.ACTION_SERVICE_STOP)

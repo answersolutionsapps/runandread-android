@@ -1,4 +1,4 @@
-package com.answersolutions.runandread.ui.library
+package com.answersolutions.runandread.ui.library.components
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background

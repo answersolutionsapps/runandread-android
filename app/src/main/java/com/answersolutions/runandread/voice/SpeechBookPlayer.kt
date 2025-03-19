@@ -194,7 +194,7 @@ class SpeechBookPlayer(
 
     private fun isSpeaking(): Boolean = textToSpeech?.isSpeaking == true || isPlaying
 
-    override fun onPlay() {
+    override fun onPlay(source: Int) {
         if (isPlaying) return
         isPlaying = true
         playNextFrame()
@@ -261,7 +261,7 @@ class SpeechBookPlayer(
         onStopSpeaking()
         onUserChangePosition(position.toFloat())
         if (isSpeaking()) return
-        onPlay()
+        onPlay(source = 3)
     }
 
     override fun onStopSpeaking() {
@@ -281,7 +281,7 @@ class SpeechBookPlayer(
         onStopSpeaking()
         onUserChangePosition(currentWordIndex.toFloat() + (SEEK_STEP_TEXT))
         if (isSpeaking()) return
-        onPlay()
+        onPlay(source = 4)
     }
 
     override fun onRewind() {
@@ -289,7 +289,7 @@ class SpeechBookPlayer(
         onStopSpeaking()
         onUserChangePosition(currentWordIndex.toFloat() - (SEEK_STEP_TEXT))
         if (isSpeaking()) return
-        onPlay()
+        onPlay(source = 5)
     }
 
     override fun onUserChangePosition(value: Float) {
