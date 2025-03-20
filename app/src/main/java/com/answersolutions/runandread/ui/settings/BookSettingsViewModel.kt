@@ -97,7 +97,7 @@ class BookSettingsViewModel @Inject constructor(
                     textToSpeech?.speak(sampleText)
                 }
             }
-        }?: run {
+        } ?: run {
             Toast.makeText(
                 application,
                 "Please select a voice first!",
@@ -305,6 +305,18 @@ class BookSettingsViewModel @Inject constructor(
         )
         language?.let {
             recentSelectionsL.push(it)
+        }
+    }
+
+    fun onCancel(onNewBook: () -> Unit, onUpdate: () -> Unit) {
+        Timber.d("BookSettingsScreenView.onCancel=>")
+        viewModelScope.launch {
+            if (_viewState.value.newBook) {
+                _viewState.value = _viewState.value.copy(newBook = false)
+                onNewBook()
+            } else {
+                onUpdate()
+            }
         }
     }
 

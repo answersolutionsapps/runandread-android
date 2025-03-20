@@ -1,11 +1,9 @@
 package com.answersolutions.runandread.ui.settings
 
 import android.speech.tts.Voice
-import com.answersolutions.runandread.data.model.Book
 import com.answersolutions.runandread.data.model.RunAndReadBook
 import com.answersolutions.runandread.voice.languageId
 import com.answersolutions.runandread.voice.RunAndReadVoice
-import timber.log.Timber
 import java.util.Locale
 
 sealed class BookSettingsEvent {
@@ -29,7 +27,11 @@ fun BookSettingsEvent.onEvent(model: BookSettingsViewModel, onNavigateBack: (Run
         is BookSettingsEvent.TitleChanged -> model.updateBookDetails(title = this.title)
         is BookSettingsEvent.AuthorChanged -> model.updateBookDetails(author = this.author)
         BookSettingsEvent.Cancel -> {
-            onNavigateBack(null)
+            model.onCancel(onNewBook = {
+                onNavigateBack(null)
+            }, onUpdate = {
+                onNavigateBack(model.bookState.value.book)
+            })
         }
 
         BookSettingsEvent.Save -> {

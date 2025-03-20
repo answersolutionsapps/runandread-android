@@ -12,7 +12,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.WindowCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -28,6 +30,7 @@ import com.answersolutions.runandread.ui.settings.BookSettingsViewModel
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 import com.answersolutions.runandread.voice.VoiceSelectorViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.filterNotNull
 
 
 sealed class Screen(val route: String) {
@@ -52,15 +55,22 @@ class MainActivity : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
         setTheme(R.style.Theme_RunAndRead)
+        // Enable edge-to-edge display
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
         val params = Bundle().apply {
             putString(TextToSpeech.Engine.KEY_FEATURE_NETWORK_SYNTHESIS, "false")
         }
         enableEdgeToEdge()
         setContent {
             val navController = rememberNavController()
-            // Observe navigation events
+            // Observe navigation events, life cycle aware
             LaunchedEffect(Unit) {
-                navigationViewModel.onNavigationEvents(navController)
+                snapshotFlow { navController.currentBackStackEntry }
+                    .filterNotNull()
+                    .collect {
+                        navigationViewModel.onNavigationEvents(navController)
+                    }
             }
             LaunchedEffect("init") {
                 voiceSelectorViewModel.loadVoices()
@@ -96,10 +106,14 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateBack = { book ->
                                 if (book == null) {//open file were canceled
-                                    navigationViewModel.popBack()
+                                    navigationViewModel.resetAndNavigateTo(Screen.Home)
                                 } else {
                                     libraryViewModel.onSelectBook(book)
-                                    navigationViewModel.navigateTo(Screen.Player)
+                                    if (navController.graph.nodes.isEmpty) {
+                                        navigationViewModel.resetAndNavigateTo(Screen.Player)
+                                    } else {
+                                        navigationViewModel.popBack()
+                                    }
                                 }
                             },
                             viewModel = bookSettingsViewModel,
@@ -115,7 +129,11 @@ class MainActivity : ComponentActivity() {
                         PlayerScreenView(
                             onBackToLibrary = {
                                 libraryViewModel.onUnselectBook()
-                                navigationViewModel.navigateTo(Screen.Home)
+                                if (navController.graph.nodes.isEmpty) {
+                                    navigationViewModel.resetAndNavigateTo(Screen.Home)
+                                } else {
+                                    navigationViewModel.popBack()
+                                }
                             }, onSettings = {
                                 navigationViewModel.navigateTo(Screen.BookSettings)
                             },

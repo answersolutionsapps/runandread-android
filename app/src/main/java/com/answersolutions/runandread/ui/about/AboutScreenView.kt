@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import com.answersolutions.runandread.BuildConfig
 import com.answersolutions.runandread.MainActivity
 import com.answersolutions.runandread.ui.components.NiceButtonLarge
+import com.answersolutions.runandread.ui.player.PlayerEvent
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,14 +29,13 @@ fun AboutScreen(
         topBar = {
             TopAppBar(title = { Text("About Run & Read") },
                 actions = {
-                    Text("Library",
-                        style = MaterialTheme.typography.titleMedium,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .clickable {
-                                onNavigateBack()
-                            })
+                    TextButton(onClick = { onNavigateBack() }) {
+                        Text(
+                            "Library",
+                            style = MaterialTheme.typography.titleLarge,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                     Spacer(modifier = Modifier.weight(1F))
                 })
         }

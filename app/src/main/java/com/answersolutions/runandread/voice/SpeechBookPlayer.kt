@@ -277,22 +277,16 @@ class SpeechBookPlayer(
     }
 
     override fun onFastForward() {
-        isPlaying = false
-        onStopSpeaking()
         onUserChangePosition(currentWordIndex.toFloat() + (SEEK_STEP_TEXT))
-        if (isSpeaking()) return
-        onPlay(source = 4)
     }
 
     override fun onRewind() {
-        isPlaying = false
-        onStopSpeaking()
         onUserChangePosition(currentWordIndex.toFloat() - (SEEK_STEP_TEXT))
-        if (isSpeaking()) return
-        onPlay(source = 5)
     }
 
     override fun onUserChangePosition(value: Float) {
+        isPlaying = false
+        onStopSpeaking()
         currentWordIndex = value.coerceIn(0f, totalWords.toFloat() - 1).toInt()
         val hState = speakingCallback.highlightingState.value
 
@@ -312,5 +306,7 @@ class SpeechBookPlayer(
                 currentWordIndexInFrame = 0, currentFrame = emptyList()
             )
         )
+        if (isSpeaking()) return
+        onPlay(source = 5)
     }
 }

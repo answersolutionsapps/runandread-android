@@ -1,7 +1,6 @@
 package com.answersolutions.runandread.ui.settings
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -191,18 +190,18 @@ fun BookSettingsScreenView(
         availableVoices = voices.toList(),
         selectedRate = bookState.voiceRate,
         selectedVoice = selectedVoice,
-        onEvent = { it.onEvent(viewModel) { onNavigateBack(bookState.book) } }
+        onEvent = { it.onEvent(model = viewModel, onNavigateBack = onNavigateBack) }
     )
-    val pincode = remember { mutableStateOf("") }
+    val pinCode = remember { mutableStateOf("") }
     if (viewState.showDeleteDialog) {
         ConfirmDeleteDialog(
-            pincode = pincode.value,
-            buttonEnabled = (pincode.value == "delete"),
+            pincode = pinCode.value,
+            buttonEnabled = (pinCode.value == "delete"),
             onValueChange = { value ->
-                pincode.value = value
+                pinCode.value = value
             },
             onDeleteClicked = {
-                if (pincode.value == "delete") {
+                if (pinCode.value == "delete") {
                     viewModel.onDelete(onBookDeleted)
                 }
             },
@@ -235,12 +234,14 @@ fun BookSettingsScreenContent(
                 TopAppBar(
                     title = { },
                     actions = {
-                        TextButton (onClick = {onEvent(BookSettingsEvent.Cancel)}) {
-                            Text("Cancel",
+                        TextButton(onClick = { onEvent(BookSettingsEvent.Cancel) }) {
+                            Text(
+                                "Cancel",
                                 style = MaterialTheme.typography.titleLarge,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier
-                                    .padding(16.dp))
+                                    .padding(16.dp)
+                            )
                         }
                         Spacer(modifier = Modifier.weight(1F))
                         Text(
@@ -248,12 +249,14 @@ fun BookSettingsScreenContent(
                             style = MaterialTheme.typography.titleLarge
                         )
                         Spacer(modifier = Modifier.weight(1F))
-                        TextButton (onClick = {onEvent(BookSettingsEvent.Save)}) {
-                            Text("Save",
+                        TextButton(onClick = { onEvent(BookSettingsEvent.Save) }) {
+                            Text(
+                                "Save",
                                 style = MaterialTheme.typography.titleLarge,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier
-                                    .padding(16.dp))
+                                    .padding(16.dp)
+                            )
                         }
 
 
@@ -297,7 +300,7 @@ fun BookSettingsScreenContent(
                                     showLanguageDialog.value = true
                                 },
                             )
-                        } else if (bookState.book is AudioBook){
+                        } else if (bookState.book is AudioBook) {
                             val book = bookState.book
                             Text(
                                 text = "Book's Language",
@@ -337,7 +340,7 @@ fun BookSettingsScreenContent(
                                     },
                                 )
                                 Spacer(Modifier.width(smallSpace))
-                            } else if (bookState.book is AudioBook){
+                            } else if (bookState.book is AudioBook) {
                                 val book = bookState.book
                                 Text(
                                     text = book.model + "\n" + book.voice,
