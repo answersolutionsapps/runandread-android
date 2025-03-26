@@ -70,7 +70,7 @@ fun BookmarksSectionView(
     var selectedBookmark by remember { mutableStateOf<Bookmark?>(null) }
     Column(modifier = Modifier.padding(horizontal = largeSpace)) {
         LazyColumn {
-            items(uiState.bookmarks) { bookMark ->
+            items(uiState.bookmarks.sortedByDescending { it.position }) { bookMark ->
                 var showDelete by remember { mutableStateOf(false) }
                 Row(
                     modifier = Modifier

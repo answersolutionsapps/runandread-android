@@ -78,7 +78,7 @@ object TextTimeRelationsTools {
             relativeTimeInSegment.div(millisecondsPerWord).toInt().coerceIn(0, words.size - 1)
 
         // Bookmark offsets (Replace with actual values from TextToSpeechPlayer)
-        val bookmarkOffset = 10
+        val bookmarkOffset = 5
         val bookmarkTextLength = 30
         val extendedText = words + nextWords
         // Determine start and end indices for bookmark text

@@ -177,7 +177,7 @@ fun PlayerScreenContent(
                         Spacer(modifier = Modifier.weight(1F))
                         TextButton(onClick = { onEvent(PlayerEvent.Settings) }) {
                             Text(
-                                "Edit",
+                                "Settings",
                                 style = MaterialTheme.typography.titleLarge,
                                 textAlign = TextAlign.Center
                             )

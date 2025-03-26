@@ -78,7 +78,7 @@ class AudioBookPlayer(
                                         .formatSecondsToHMS()
                                 val hState = speakingCallback.highlightingState.value
                                 if ((frame.isEmpty() || elapsedSeconds >= (nextPartStartTime / 1000.0))) {
-                                    val textFrame = book.getCurrentText(elapsedSeconds.toDouble())
+                                    val textFrame = book.getCurrentText(elapsedMilliseconds=elapsedSeconds.toDouble())
                                     frame =
                                         textFrame.text.trim().split(" ").filter { it.isNotEmpty() }
                                     nextPartStartTime =
@@ -213,13 +213,11 @@ class AudioBookPlayer(
         mediaPlayer?.let { player ->
             val book = speakingCallback.book as AudioBook
             val elapsedSeconds = player.currentPosition / 1000
-            book.bookmarks.add(Bookmark(elapsedSeconds.toInt()))
+            val b = Bookmark(elapsedSeconds.toInt())
+            b.title = titleForAudioBookmark(book, elapsedSeconds.toInt())
+            book.bookmarks.add(b)
             speakingCallback.onUpdateUI(speakingCallback.viewState.value.copy(
-                bookmarks = book.bookmarks.map {
-                    if (it.title.isEmpty()) {
-                        it.title = titleForAudioBookmark(book, it.position)
-                    }; it
-                }
+                bookmarks = book.bookmarks
             ))
         }
 
@@ -243,7 +241,7 @@ class AudioBookPlayer(
                             (elapsedSeconds / book.voiceRate).toDouble().formatSecondsToHMS()
 
                         if ((frame.isEmpty() || elapsedSeconds >= (nextPartStartTime / 1000.0))) {
-                            val textFrame = book.getCurrentText(it.currentPosition.toDouble())
+                            val textFrame = book.getCurrentText(elapsedMilliseconds=it.currentPosition.toDouble())
                             frame = textFrame.text.trim().split(" ").filter { it.isNotEmpty() }
                             nextPartStartTime =
                                 textFrame.nextStartTime ?: (textFrame.startTimeMms + 30_000)
@@ -286,9 +284,9 @@ class AudioBookPlayer(
     private fun titleForAudioBookmark(book: AudioBook, position: Int): String {
         val elapsedSeconds = position.toDouble()
         val forElapsedTimeMilliseconds = (elapsedSeconds * 1000)
-        val textFrame = book.getCurrentText(forElapsedTimeMilliseconds)
+        val textFrame = book.getCurrentText(elapsedMilliseconds=forElapsedTimeMilliseconds)
         val bookmarkTitle = getCurrentBookmarkText(
-            forElapsedTimeMilliseconds,
+            elapsedSeconds=elapsedSeconds,
             textFrame.text,
             textFrame.startTimeMms,
             textFrame.nextStartTime ?: (textFrame.startTimeMms + 30000),
