@@ -19,6 +19,15 @@ import java.util.*
 import kotlin.math.max
 import kotlin.math.min
 
+fun String.cleanedForTTS(): String {
+    return this.replace(",,", ",").replace("..", ".").filter { char ->
+        char.isLetterOrDigit() ||
+                char.isWhitespace() ||
+                char in listOf('.', ',', '?', '!', '\'', '"', '-')
+    }
+}
+
+
 interface SpeakingCallBack {
     fun onReady(uiState: PlayerUIState)
     fun onStart()
@@ -44,7 +53,7 @@ class SpeechBookPlayer(
     private val speakingCallback: SpeakingCallBack
 ) : BookPlayer {
     companion object {
-        const val FRAME_SIZE = 100
+        const val FRAME_SIZE = 60
         const val SEEK_STEP_TEXT = 60
     }
 
@@ -70,7 +79,9 @@ class SpeechBookPlayer(
         textToSpeech = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 val player = textToSpeech!!
-                words = book.text.flatMap { it.split("\\s+".toRegex()) }
+
+
+                words = book.text.flatMap { it.cleanedForTTS().split("\\s+".toRegex()) }
                     .mapNotNull { it.takeIf { it.isNotEmpty() } }
 
                 totalWords = words.size
@@ -104,15 +115,20 @@ class SpeechBookPlayer(
         }
     }
 
+    var tmp_start = 0
     private val ttsListener = object : UtteranceProgressListener() {
         override fun onRangeStart(utteranceId: String?, start: Int, end: Int, frame: Int) {
-            Timber.d("onRangeStart: $currentWordIndex")
+            Timber.d("start:$start $end; ${frame}")
+            currentWordIndex += 1
             val hState = speakingCallback.highlightingState.value
             if (hState.currentWordIndexInFrame < hState.currentFrame.size - 1) {
                 val book = speakingCallback.book as Book
                 val secondsElapsed = calculateElapsedTime(currentWordIndex)
-                currentWordIndex += 1
+//                if (currentWordIndex <= tmp_start) {
+//                    currentWordIndex += 1
+//                }
 
+                Timber.d("onRangeStart: $currentWordIndex; ${hState.currentWordIndexInFrame}")
                 speakingCallback.onProgressUpdate(
                     updatedBook = book.copy(
                         lastPosition = currentWordIndex,
@@ -127,7 +143,6 @@ class SpeechBookPlayer(
                     )
                 )
             }
-
         }
 
         override fun onStart(utteranceId: String?) {
@@ -167,7 +182,7 @@ class SpeechBookPlayer(
 
     fun onNextWord() {
         if (currentWordIndex < totalWords - 1) {
-            currentWordIndex++
+//            currentWordIndex++
             playNextFrame()
         } else {
             speakingCallback.onUpdateUI(
@@ -204,7 +219,11 @@ class SpeechBookPlayer(
         if (words.isEmpty() || currentWordIndex >= words.size) return
         val toIndex = minOf(currentWordIndex + FRAME_SIZE, totalWords - 1)
         val hState = speakingCallback.highlightingState.value
+
+        Timber.d("currentWordIndex: $currentWordIndex, toIndex: $toIndex")
         val frame = words.subList(currentWordIndex, toIndex)
+        Timber.d("frame: $frame")
+        tmp_start = toIndex
         speakingCallback.onUpdateHighlightingUI(
             hState.copy(
                 currentWordIndexInFrame = 0,
