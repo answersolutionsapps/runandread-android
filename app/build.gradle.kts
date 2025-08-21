@@ -10,14 +10,14 @@ plugins {
 
 android {
     namespace = "com.answersolutions.runandread"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.answersolutions.runandread"
         minSdk = 24
-        targetSdk = 34
-        versionCode = 9
-        versionName = "1.8"
+        targetSdk = 36
+        versionCode = 10
+        versionName = "1.9"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
