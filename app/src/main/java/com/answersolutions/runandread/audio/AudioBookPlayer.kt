@@ -78,7 +78,7 @@ class AudioBookPlayer(
                                         .formatSecondsToHMS()
                                 val hState = speakingCallback.highlightingState.value
                                 if ((frame.isEmpty() || elapsedSeconds >= (nextPartStartTime / 1000.0))) {
-                                    val textFrame = book.getCurrentText(elapsedMilliseconds=elapsedSeconds.toDouble())
+                                    val textFrame = book.getCurrentText(elapsedMilliseconds = elapsedSeconds.toDouble())
                                     frame =
                                         textFrame.text.trim().split(" ").filter { it.isNotEmpty() }
                                     nextPartStartTime =
@@ -241,7 +241,7 @@ class AudioBookPlayer(
                             (elapsedSeconds / book.voiceRate).toDouble().formatSecondsToHMS()
 
                         if ((frame.isEmpty() || elapsedSeconds >= (nextPartStartTime / 1000.0))) {
-                            val textFrame = book.getCurrentText(elapsedMilliseconds=it.currentPosition.toDouble())
+                            val textFrame = book.getCurrentText(elapsedMilliseconds = it.currentPosition.toDouble())
                             frame = textFrame.text.trim().split(" ").filter { it.isNotEmpty() }
                             nextPartStartTime =
                                 textFrame.nextStartTime ?: (textFrame.startTimeMms + 30_000)
@@ -259,7 +259,6 @@ class AudioBookPlayer(
                             currentStartTime,
                             nextPartStartTime
                         )
-//                        Timber.d("updatePosition.currentWordIndexInFrame: $currentWordIndexInFrame")
                         val hState = speakingCallback.highlightingState.value
                         speakingCallback.onProgressUpdate(
                             updatedBook = book.copy(
@@ -284,16 +283,16 @@ class AudioBookPlayer(
     private fun titleForAudioBookmark(book: AudioBook, position: Int): String {
         val elapsedSeconds = position.toDouble()
         val forElapsedTimeMilliseconds = (elapsedSeconds * 1000)
-        val textFrame = book.getCurrentText(elapsedMilliseconds=forElapsedTimeMilliseconds)
+        val textFrame = book.getCurrentText(elapsedMilliseconds = forElapsedTimeMilliseconds)
         val bookmarkTitle = getCurrentBookmarkText(
-            elapsedSeconds=elapsedSeconds,
+            elapsedSeconds = elapsedSeconds,
             textFrame.text,
             textFrame.startTimeMms,
             textFrame.nextStartTime ?: (textFrame.startTimeMms + 30000),
             textFrame.nextText
         )
 
-        val elapsedTimeToShow = (elapsedSeconds / book.voiceRate).formatSecondsToHMS()//
+        val elapsedTimeToShow = (elapsedSeconds / book.voiceRate).formatSecondsToHMS()
         return "$elapsedTimeToShow | $bookmarkTitle"
     }
 }
