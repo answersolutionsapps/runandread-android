@@ -13,6 +13,19 @@ Ultimate Text-to-Speech Player for Android - Listen to your books while running,
 RunAndRead is an Android application that converts text to speech, allowing you to listen to your books while running, exercising, or on the go. It supports various e-book formats and provides a clean, intuitive interface for managing your library and controlling playback.
 Starting from Android v1.5 (6) and iOS v1.6 (18), Run & Read supports MP3 audiobooks generated using the RANDR pipeline in this repository. [See instructions here](https://github.com/sergenes/runandread-audiobook/blob/main/RANDR.md).
 
+## Features
+
+- **Text-to-Speech Playback**: Convert any text or e-book to speech
+- **Multiple Voice Support**: Choose from various TTS voices
+- **Bookmarks**: Save and jump to specific positions in your books
+- **Speed Control**: Adjust playback speed to your preference
+- **Library Management**: Organize your books in a clean, intuitive interface
+- **E-book Format Support**: Read EPUB, PDF, and plain text files and a custom `.randr` archive
+- **Background Playback**: Continue listening even when the app is in the background
+- **Media Controls**: Control playback from your lock screen or notification
+- **Highlighting**: Follow along with highlighted text as it's being read
+
+
 **Download and try the apps for free!**
 
 ## Installation
@@ -42,18 +55,6 @@ Starting from Android v1.5 (6) and iOS v1.6 (18), Run & Read supports MP3 audiob
 
 ---
 
-## Features
-
-- **Text-to-Speech Playback**: Convert any text or e-book to speech
-- **Multiple Voice Support**: Choose from various TTS voices
-- **Bookmarks**: Save and jump to specific positions in your books
-- **Speed Control**: Adjust playback speed to your preference
-- **Library Management**: Organize your books in a clean, intuitive interface
-- **E-book Format Support**: Read EPUB, PDF, and plain text files
-- **Background Playback**: Continue listening even when the app is in the background
-- **Media Controls**: Control playback from your lock screen or notification
-- **Highlighting**: Follow along with highlighted text as it's being read
-
 ## Architecture
 
 RunAndRead follows the MVVM (Model-View-ViewModel) architecture pattern and is built with modern Android development tools and libraries.
@@ -70,6 +71,11 @@ For a detailed overview of the app's architecture, see [ARCHITECTURE.md](docs/AR
 - **Android TTS**: For text-to-speech conversion
 - **Jetpack Navigation**: For in-app navigation
 - **DataStore**: For preferences storage
+
+## 📦 Dependencies
+[RunAndRead-Audiobook](https://github.com/sergenes/runandread-audiobook) is an open-source project aimed at generating high-quality text-to-speech (TTS) generated audiobooks using models like **Zyphra/Zonos**.
+Run & Read supports MP3 audiobooks generated using the RANDR pipeline in this repository. [See instructions here](https://github.com/sergenes/runandread-audiobook/blob/main/RANDR.md).
+
 
 ## Contributing
 
