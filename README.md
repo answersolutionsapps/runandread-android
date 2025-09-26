@@ -1,8 +1,9 @@
-# RunAndRead-Android | [[RunAndRead-iOS]](https://github.com/answersolutionsapps/runandread-ios) | [[Audiobook-Pipeline]](https://github.com/sergenes/runandread-audiobook)
+# RunAndRead | [[iOS Version]](https://github.com/answersolutionsapps/runandread-ios) | [[Audiobook Pipeline]](https://github.com/sergenes/runandread-audiobook)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://www.android.com/)
 [![Language](https://img.shields.io/badge/Language-Kotlin-blue.svg)](https://kotlinlang.org/)
+[![Version](https://img.shields.io/badge/Version-1.9-orange.svg)](https://play.google.com/store/apps/details?id=com.answersolutions.runandread)
 
 Ultimate Text-to-Speech Player for Android - Listen to your books while running, exercising, or on the go!
 
@@ -11,7 +12,6 @@ Ultimate Text-to-Speech Player for Android - Listen to your books while running,
 ## Overview
 
 RunAndRead is an Android application that converts text to speech, allowing you to listen to your books while running, exercising, or on the go. It supports various e-book formats and provides a clean, intuitive interface for managing your library and controlling playback.
-Starting from Android v1.5 (6) and iOS v1.6 (18), Run & Read supports MP3 audiobooks generated using the RANDR pipeline in this repository. [See instructions here](https://github.com/sergenes/runandread-audiobook/blob/main/RANDR.md).
 
 ## Features
 
@@ -20,20 +20,21 @@ Starting from Android v1.5 (6) and iOS v1.6 (18), Run & Read supports MP3 audiob
 - **Bookmarks**: Save and jump to specific positions in your books
 - **Speed Control**: Adjust playback speed to your preference
 - **Library Management**: Organize your books in a clean, intuitive interface
-- **E-book Format Support**: Read EPUB, PDF, and plain text files and a custom `.randr` archive
+- **E-book Format Support**: Read EPUB, PDF, plain text files, and custom `.randr` archives
 - **Background Playback**: Continue listening even when the app is in the background
 - **Media Controls**: Control playback from your lock screen or notification
 - **Highlighting**: Follow along with highlighted text as it's being read
+- **MP3 Audiobook Support**: Listen to high-quality audiobooks generated using the RANDR pipeline
 
 
-**Download and try the apps for free!**
+**Download and try the app for free!**
 
 ## Installation
 
 ### From App Store
-🍏 **App Store**: [Ran & Read for Apple Devices](https://apps.apple.com/us/app/run-read-listen-on-the-go/id6741396289)
+🍏 **App Store**: [RunAndRead for iOS](https://apps.apple.com/us/app/run-read-listen-on-the-go/id6741396289)
 ### From Google Play
-🤖 **Google Play**: [Ran & Read for Android](https://play.google.com/store/apps/details?id=com.answersolutions.runandread)
+🤖 **Google Play**: [RunAndRead for Android](https://play.google.com/store/apps/details?id=com.answersolutions.runandread)
 
 
 📱 **Scan QR Codes to Download:**
@@ -73,8 +74,9 @@ For a detailed overview of the app's architecture, see [ARCHITECTURE.md](docs/AR
 - **DataStore**: For preferences storage
 
 ## 📦 Dependencies
-[RunAndRead-Audiobook](https://github.com/sergenes/runandread-audiobook) is an open-source project aimed at generating high-quality text-to-speech (TTS) generated audiobooks using models like **Zyphra/Zonos**.
-Run & Read supports MP3 audiobooks generated using the RANDR pipeline in this repository. [See instructions here](https://github.com/sergenes/runandread-audiobook/blob/main/RANDR.md).
+[RunAndRead Audiobook](https://github.com/sergenes/runandread-audiobook) is an open-source project aimed at generating high-quality text-to-speech (TTS) audiobooks using models like **Zyphra/Zonos**. 
+
+For instructions on generating your own audiobooks using the RANDR pipeline, see the [RANDR documentation](https://github.com/sergenes/runandread-audiobook/blob/main/RANDR.md).
 
 
 ## Contributing
