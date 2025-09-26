@@ -264,7 +264,7 @@ class PlayerViewModel @Inject constructor(
     private fun startPlaybackService() {
         val intent =
             Intent(application, PlayerService::class.java)
-        //todo: find a better solution
+        // TODO: Find a better solution
         PlayerService.playerViewModel = this
         ContextCompat.startForegroundService(application, intent)
     }
