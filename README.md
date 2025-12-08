@@ -120,7 +120,7 @@ For detailed architecture documentation with comprehensive diagrams, see [ARCHIT
 - **DataStore**: For preferences storage
 
 ## 📦 Dependencies
-[RunAndRead Audiobook](https://github.com/sergenes/runandread-audiobook) is an open-source project for generating high-quality text-to-speech (TTS) audiobooks using models like **Zyphra/Zonos**, **Kokoro-82M**, and others.. 
+[RunAndRead Audiobook](https://github.com/sergenes/runandread-audiobook) is an open-source project for generating high-quality audiobooks using models like **Zyphra/Zonos**, **Kokoro-82M**, and others.. 
 
 For instructions on generating your own audiobooks using the RANDR pipeline, see the [RANDR documentation](https://github.com/sergenes/runandread-audiobook/blob/main/RANDR.md).
 
@@ -156,7 +156,7 @@ We welcome contributions from the community! Whether you're fixing bugs, adding 
    ```
 3. **Make your changes**
    - Follow the existing code style
-   - Add tests for new functionality
+   - Add tests for new functionality, if possible
    - Update documentation as needed
 4. **Commit your changes**
    ```bash
@@ -172,9 +172,8 @@ We welcome contributions from the community! Whether you're fixing bugs, adding 
 
 - Follow [Kotlin coding conventions](https://kotlinlang.org/docs/coding-conventions.html)
 - Use meaningful variable and function names
-- Add KDoc comments for public APIs
 - Keep functions small and focused
-- Write unit tests for new features
+- Write unit tests for new features, if possible
 
 ### Areas for Contribution
 
