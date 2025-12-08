@@ -264,7 +264,12 @@ class PlayerViewModel @Inject constructor(
     private fun startPlaybackService() {
         val intent =
             Intent(application, PlayerService::class.java)
-        // TODO: Find a better solution
+        // TODO: Find a better solution - This static reference creates tight coupling between the ViewModel and Service,
+        // which violates clean architecture principles and can cause memory leaks if the ViewModel is not properly cleared.
+        // The service holds a direct reference to the ViewModel, making testing difficult and creating potential lifecycle issues.
+        // Better alternatives:
+        // 1) Use a Repository/UseCase pattern with dependency injection to share state,
+        // 2) Implement a proper communication mechanism using BroadcastReceiver or EventBus,
         PlayerService.playerViewModel = this
         ContextCompat.startForegroundService(application, intent)
     }

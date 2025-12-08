@@ -58,7 +58,53 @@ Starting from Android v1.5 (6) and iOS v1.6 (18), Run & Read supports MP3 audiob
 
 RunAndRead follows the MVVM (Model-View-ViewModel) architecture pattern and is built with modern Android development tools and libraries.
 
-For a detailed overview of the app's architecture, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+### High-Level Architecture
+
+```mermaid
+graph TB
+    subgraph "📱 UI Layer"
+        UI[Jetpack Compose UI]
+        VM[ViewModels]
+    end
+
+    subgraph "🎵 Player Layer"
+        BP[BookPlayer Interface]
+        ABP[AudioBookPlayer]
+        SBP[SpeechBookPlayer]
+    end
+
+    subgraph "🗣️ TTS Layer"
+        TTS[Text-to-Speech Engine]
+    end
+
+    subgraph "💾 Data Layer"
+        REPO[Repositories]
+        DS[Data Sources]
+    end
+
+    subgraph "⚙️ Service Layer"
+        PS[Background Services]
+    end
+
+    UI --> VM
+    VM --> REPO
+    VM --> BP
+    BP --> ABP
+    BP --> SBP
+    SBP --> TTS
+    REPO --> DS
+```
+
+### Key Architectural Features
+
+- **🏗️ Clean Architecture**: Separation of concerns with distinct layers
+- **🔄 MVVM Pattern**: Reactive UI with ViewModels managing state
+- **💉 Dependency Injection**: Hilt for clean dependency management
+- **🎯 Single Responsibility**: Each component has a focused purpose
+- **🧪 Testable Design**: Interfaces and dependency injection enable easy testing
+- **📱 Modern Android**: Built with Jetpack Compose and latest Android APIs
+
+For detailed architecture documentation with comprehensive diagrams, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Technologies Used
 
@@ -73,13 +119,63 @@ For a detailed overview of the app's architecture, see [ARCHITECTURE.md](docs/AR
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions from the community! Whether you're fixing bugs, adding features, or improving documentation, your help is appreciated.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### Development Setup
+
+1. **Prerequisites**
+   - Android Studio Arctic Fox or later
+   - JDK 11 or later
+   - Android SDK with API level 24+
+
+2. **Clone and Setup**
+   ```bash
+   git clone https://github.com/answersolutions/runandread-android.git
+   cd runandread-android
+   ```
+
+3. **Open in Android Studio**
+   - Open the project in Android Studio
+   - Let Gradle sync complete
+   - Run the app on an emulator or device
+
+### How to Contribute
+
+1. **Fork the repository**
+2. **Create your feature branch**
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+3. **Make your changes**
+   - Follow the existing code style
+   - Add tests for new functionality
+   - Update documentation as needed
+4. **Commit your changes**
+   ```bash
+   git commit -m 'Add some amazing feature'
+   ```
+5. **Push to your branch**
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+6. **Open a Pull Request**
+
+### Code Style Guidelines
+
+- Follow [Kotlin coding conventions](https://kotlinlang.org/docs/coding-conventions.html)
+- Use meaningful variable and function names
+- Add KDoc comments for public APIs
+- Keep functions small and focused
+- Write unit tests for new features
+
+### Areas for Contribution
+
+- 🐛 **Bug Fixes**: Check our [Issues](https://github.com/answersolutions/runandread-android/issues)
+- ✨ **New Features**: E-book format support, UI improvements, accessibility features
+- 📚 **Documentation**: Code comments, user guides, architecture documentation
+- 🧪 **Testing**: Unit tests, integration tests, UI tests
+- 🌍 **Localization**: Translations for different languages
+- ♿ **Accessibility**: Improving app accessibility for all users
 
 ## 📞 Contact
 
