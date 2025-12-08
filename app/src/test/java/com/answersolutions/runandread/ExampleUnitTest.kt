@@ -95,8 +95,8 @@ class ExampleUnitTest {
 //        print(title1)
 //        print(title2)
 //        print(title3)
-        print(test.indices)
-        print(test.indices.reversed())
-        assertEquals(4, 2 + 2)
+//        print(test.indices)
+//        print(test.indices.reversed())
+//        assertEquals(4, 2 + 2)
     }
 }

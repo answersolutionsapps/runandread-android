@@ -1,6 +1,5 @@
 package com.answersolutions.runandread.ui.about
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -17,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import com.answersolutions.runandread.BuildConfig
 import com.answersolutions.runandread.MainActivity
 import com.answersolutions.runandread.ui.components.NiceButtonLarge
-import com.answersolutions.runandread.ui.player.PlayerEvent
 import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
