@@ -120,7 +120,7 @@ For detailed architecture documentation with comprehensive diagrams, see [ARCHIT
 - **DataStore**: For preferences storage
 
 ## 📦 Dependencies
-[RunAndRead Audiobook](https://github.com/sergenes/runandread-audiobook) is an open-source project aimed at generating high-quality text-to-speech (TTS) audiobooks using models like **Zyphra/Zonos**. 
+[RunAndRead Audiobook](https://github.com/sergenes/runandread-audiobook) is an open-source project for generating high-quality text-to-speech (TTS) audiobooks using models like **Zyphra/Zonos**, **Kokoro-82M**, and others.. 
 
 For instructions on generating your own audiobooks using the RANDR pipeline, see the [RANDR documentation](https://github.com/sergenes/runandread-audiobook/blob/main/RANDR.md).
 
