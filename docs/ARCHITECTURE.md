@@ -16,6 +16,10 @@ graph TD
             UI_COMP[ui/components/]
         end
 
+        subgraph "🏗️ Domain Layer"
+            DOMAIN_UC[domain/usecase/]
+        end
+
         subgraph "💾 Data Layer"
             DATA_MODEL[data/model/]
             DATA_REPO[data/repository/]
@@ -41,15 +45,18 @@ graph TD
     end
 
     UI_LIB --> DATA_REPO
-    UI_PLAYER --> PLAYER
+    UI_PLAYER --> DOMAIN_UC
     UI_SETTINGS --> DATA_REPO
+    SERVICES --> DOMAIN_UC
+    DOMAIN_UC --> PLAYER
+    DOMAIN_UC --> DATA_REPO
     PLAYER --> AUDIO
     PLAYER --> VOICE
     DATA_REPO --> DATA_DS
     DATA_REPO --> DATA_MODEL
     DI --> DATA_REPO
+    DI --> DOMAIN_UC
     DI --> PLAYER
-    SERVICES --> PLAYER
 ```
 
 ### Package Organization
@@ -61,6 +68,9 @@ graph TD
   - `about/`: About screen and app information
   - `navigation/`: Navigation logic and ViewModels
   - `components/`: Reusable UI components
+
+- **`domain/`**: Domain layer components
+  - `usecase/`: Business logic use cases for decoupled operations
 
 - **`data/`**: Data layer components
   - `model/`: Data models and entities
@@ -85,6 +95,11 @@ graph TB
         UI --> VM
     end
 
+    subgraph "Domain Layer"
+        PUC[PlayerUseCase]
+        BUC[BookmarkUseCase]
+    end
+
     subgraph "Player Layer"
         BP[BookPlayer Interface]
         ABP[AudioBookPlayer]
@@ -100,11 +115,13 @@ graph TB
     end
 
     subgraph "Data Layer"
-        REPO[Repositories]
+        PSR[PlayerStateRepository]
+        REPO[Other Repositories]
         DS[Data Sources]
         MODEL[Models]
         REPO --> DS
         REPO --> MODEL
+        PSR --> MODEL
     end
 
     subgraph "Service Layer"
@@ -115,12 +132,22 @@ graph TB
         HILT[Hilt/AppModule]
     end
 
-    VM --> REPO
-    VM --> BP
+    VM --> PUC
+    VM --> BUC
+    VM --> PSR
+    PS --> PUC
+    PS --> BUC
+    PS --> PSR
+    PUC --> BP
+    BUC --> BP
+    PUC --> PSR
+    BUC --> PSR
     SBP --> SSP
-    PS --> BP
     HILT -.-> UI
     HILT -.-> VM
+    HILT -.-> PUC
+    HILT -.-> BUC
+    HILT -.-> PSR
     HILT -.-> REPO
     HILT -.-> BP
 ```
@@ -144,7 +171,96 @@ The UI layer is built using Jetpack Compose and follows the MVVM (Model-View-Vie
   - `VoiceSelectorViewModel`: Manages voice selection for TTS
   - `NavigationViewModel`: Controls navigation between screens
 
-### 2. Player Layer
+### 2. Domain Layer
+
+The domain layer contains business logic use cases that decouple the UI and Service layers from direct dependencies:
+
+```mermaid
+classDiagram
+    class PlayerUseCase {
+        <<interface>>
+        +play()
+        +pause()
+        +fastForward()
+        +fastRewind()
+        +seekTo(position: Long)
+        +getCurrentPosition(): Flow~Long~
+        +getPlaybackState(): Flow~PlaybackState~
+    }
+
+    class PlayerUseCaseImpl {
+        -playerStateRepository: PlayerStateRepository
+        -libraryRepository: LibraryRepository
+        -bookPlayer: BookPlayer?
+        +play()
+        +pause()
+        +fastForward()
+        +fastRewind()
+        +seekTo(position: Long)
+        +getCurrentPosition(): Flow~Long~
+        +getPlaybackState(): Flow~PlaybackState~
+        +setBookPlayer(player: BookPlayer)
+        +getCurrentTimeElapsed(): Long
+    }
+
+    class BookmarkUseCase {
+        <<interface>>
+        +saveBookmark()
+        +deleteBookmark(bookmark: Bookmark)
+        +playFromBookmark(position: Int)
+        +getBookmarks(): Flow~List~Bookmark~~
+    }
+
+    class BookmarkUseCaseImpl {
+        -playerStateRepository: PlayerStateRepository
+        -bookPlayer: BookPlayer?
+        +saveBookmark()
+        +deleteBookmark(bookmark: Bookmark)
+        +playFromBookmark(position: Int)
+        +getBookmarks(): Flow~List~Bookmark~~
+        +setBookPlayer(player: BookPlayer)
+    }
+
+    class PlayerStateRepository {
+        <<interface>>
+        +getCurrentBook(): Flow~RunAndReadBook?~
+        +getPlaybackState(): Flow~PlaybackState~
+        +getCurrentPosition(): Flow~Long~
+        +updatePlaybackState(state: PlaybackState)
+        +updateCurrentPosition(position: Long)
+        +setCurrentBook(book: RunAndReadBook?)
+    }
+
+    class PlaybackState {
+        +isPlaying: Boolean
+        +position: Long
+        +duration: Long
+        +speed: Float
+    }
+
+    PlayerUseCase <|-- PlayerUseCaseImpl
+    BookmarkUseCase <|-- BookmarkUseCaseImpl
+    PlayerUseCaseImpl --> PlayerStateRepository
+    BookmarkUseCaseImpl --> PlayerStateRepository
+    PlayerStateRepository --> PlaybackState
+```
+
+**Components:**
+- `PlayerUseCase`: Interface for player operations (play, pause, seek, etc.)
+- `PlayerUseCaseImpl`: Implementation that coordinates between BookPlayer and PlayerStateRepository
+- `BookmarkUseCase`: Interface for bookmark operations (save, delete, play from bookmark)
+- `BookmarkUseCaseImpl`: Implementation that handles bookmark functionality
+- `PlayerStateRepository`: Manages current playback state and book information
+- `PlaybackState`: Data class representing the current playback state
+
+**Benefits of the Domain Layer:**
+- **Decoupling**: ViewModels and Services no longer directly depend on each other
+- **Testability**: Easy to mock use cases for unit testing
+- **Single Responsibility**: Each use case has a focused purpose
+- **Reusability**: Use cases can be shared between different UI components and services
+- **Memory Safety**: Eliminates static references that could cause memory leaks
+
+### 3. Player Layer
 
 The player layer is responsible for playing books, either as audio or using text-to-speech:
 
@@ -210,14 +326,14 @@ classDiagram
 - `AudioBookPlayer`: Implementation for playing audio books using ExoPlayer
 - `SpeechBookPlayer`: Implementation for playing books using text-to-speech
 
-### 3. Text-to-Speech (TTS) Layer
+### 4. Text-to-Speech (TTS) Layer
 
 The TTS layer handles the conversion of text to speech:
 
 - `SimpleSpeechProvider`: Provides TTS functionality
 - `SpeakingCallBack`: Interface for communication between TTS and UI
 
-### 4. Data Layer
+### 5. Data Layer
 
 The data layer manages the app's data:
 

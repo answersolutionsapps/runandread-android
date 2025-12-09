@@ -69,6 +69,11 @@ graph TB
         VM[ViewModels]
     end
 
+    subgraph "🏗️ Domain Layer"
+        PUC[PlayerUseCase]
+        BUC[BookmarkUseCase]
+    end
+
     subgraph "🎵 Player Layer"
         BP[BookPlayer Interface]
         ABP[AudioBookPlayer]
@@ -80,7 +85,8 @@ graph TB
     end
 
     subgraph "💾 Data Layer"
-        REPO[Repositories]
+        PSR[PlayerStateRepository]
+        REPO[Other Repositories]
         DS[Data Sources]
     end
 
@@ -89,8 +95,16 @@ graph TB
     end
 
     UI --> VM
-    VM --> REPO
-    VM --> BP
+    VM --> PUC
+    VM --> BUC
+    VM --> PSR
+    PS --> PUC
+    PS --> BUC
+    PS --> PSR
+    PUC --> BP
+    BUC --> BP
+    PUC --> PSR
+    BUC --> PSR
     BP --> ABP
     BP --> SBP
     SBP --> TTS
@@ -183,6 +197,19 @@ We welcome contributions from the community! Whether you're fixing bugs, adding 
 - 🧪 **Testing**: Unit tests, integration tests, UI tests
 - 🌍 **Localization**: Translations for different languages
 - ♿ **Accessibility**: Improving app accessibility for all users
+
+
+### Tag the release
+   - After successful upload, tag the main branch to mark the release:
+     ```
+     git tag "x.y.z(build)" 
+     git push origin "x.y.z(build)"
+     ```
+   - Example for version 1.9, build 10:
+     ```bash
+     git tag "1.9(10)"
+     git push origin "1.9(10)"
+     ```
 
 ## 📞 Contact
 
