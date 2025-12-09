@@ -14,12 +14,33 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import com.answersolutions.runandread.R
-import com.answersolutions.runandread.ui.player.PlayerViewModel
+import com.answersolutions.runandread.data.repository.PlayerStateRepository
+import com.answersolutions.runandread.domain.usecase.BookmarkUseCase
+import com.answersolutions.runandread.domain.usecase.PlayerUseCase
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import timber.log.Timber
+import javax.inject.Inject
 
 
+@AndroidEntryPoint
 class PlayerService : Service() {
+
+    @Inject
+    lateinit var playerUseCase: PlayerUseCase
+
+    @Inject
+    lateinit var bookmarkUseCase: BookmarkUseCase
+
+    @Inject
+    lateinit var playerStateRepository: PlayerStateRepository
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     companion object {
         const val ACTION_PLAY = "com.answersolutions.runandread.ACTION_PLAY"
@@ -30,7 +51,6 @@ class PlayerService : Service() {
         const val ACTION_SERVICE_STOP = "com.answersolutions.runandread.ACTION_SERVICE_STOP"
         const val NOTIFICATION_ID = 1974
         const val CHANNEL_ID = "audio_channel"
-        var playerViewModel: PlayerViewModel? = null
     }
 
     private lateinit var mediaSession: MediaSessionCompat
@@ -50,7 +70,7 @@ class PlayerService : Service() {
                     )
                     .setState(
                         PlaybackStateCompat.STATE_PLAYING,
-                        playerViewModel?.currentTimeElapsed() ?: 0,
+                        0,
                         1f
                     )
                     .build()
@@ -65,9 +85,13 @@ class PlayerService : Service() {
         initMediaSession(this)
         createNotificationChannel()
 
-        playerViewModel?.playbackProgressCallBack = { position, duration, isPlaying ->
-            updatePlaybackState(position = position, duration = duration, isPlaying)
+        // Observe state changes instead of callback
+        serviceScope.launch {
+            playerStateRepository.getPlaybackState().collect { state ->
+                updatePlaybackState(state.position, state.duration, state.isPlaying)
+            }
         }
+
         updateNotification()
     }
 
@@ -91,39 +115,38 @@ class PlayerService : Service() {
     private val mediaSessionCallback = object : MediaSessionCompat.Callback() {
         override fun onPlay() {
             Timber.d("PlayerService.onPlay()")
-            playerViewModel?.onPlay()
-            updatePlaybackState(
-                position = 0,
-                duration = 0,
-                isPlaying = true
-            ) // Ensure state updates
+            serviceScope.launch {
+                playerUseCase.play()
+            }
         }
 
         override fun onPause() {
             Timber.d("PlayerService.onPause()")
-            playerViewModel?.onPause()
-            updatePlaybackState(
-                position = 0,
-                duration = 0,
-                isPlaying = false
-            ) // Ensure state updates
+            serviceScope.launch {
+                playerUseCase.pause()
+            }
         }
 
         override fun onFastForward() {
             Timber.d("PlayerService.onFastForward()")
-            playerViewModel?.fastForward()
-
+            serviceScope.launch {
+                playerUseCase.fastForward()
+            }
         }
 
         override fun onRewind() {
             Timber.d("PlayerService.onRewind()")
-            playerViewModel?.fastRewind()
+            serviceScope.launch {
+                playerUseCase.fastRewind()
+            }
         }
 
         override fun onCommand(command: String?, extras: Bundle?, cb: ResultReceiver?) {
             super.onCommand(command, extras, cb)
             Timber.d("onCommand()=>${command}")
-            playerViewModel?.saveBookmark()
+            serviceScope.launch {
+                bookmarkUseCase.saveBookmark()
+            }
         }
 
     }
@@ -153,55 +176,56 @@ class PlayerService : Service() {
         mediaSession.setExtras(Bundle().apply {
             putLong(MediaMetadataCompat.METADATA_KEY_DURATION, durationMsc)
         })
-        mediaSession.setMetadata(
-            MediaMetadataCompat.Builder()
-                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, durationMsc)
-                .putString(
-                    MediaMetadataCompat.METADATA_KEY_TITLE,
-                    playerViewModel?.book?.title ?: "Unknown"
-                )
-                .putString(
-                    MediaMetadataCompat.METADATA_KEY_AUTHOR,
-                    playerViewModel?.book?.author ?: "Unknown"
-                )
-                .build()
-        )
+        // Get book info from repository instead of ViewModel
+        serviceScope.launch {
+            val book = playerStateRepository.getCurrentBook().first()
+
+            mediaSession.setMetadata(
+                MediaMetadataCompat.Builder()
+                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, durationMsc)
+                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, book?.title ?: "Unknown")
+                    .putString(MediaMetadataCompat.METADATA_KEY_AUTHOR, book?.author ?: "Unknown")
+                    .build()
+            )
+        }
 
         mediaSession.isActive = true // Ensure it's active!
     }
 
     private fun updateNotification() {
-        playerViewModel?.book?.let {
-            val playIntent = getServiceIntent(ACTION_PLAY, 0)
-            val pauseIntent = getServiceIntent(ACTION_PAUSE, 1)
-            val ffIntent = getServiceIntent(ACTION_FF, 2)
-            val frIntent = getServiceIntent(ACTION_FR, 3)
-//            val favoriteIntent = getServiceIntent(ACTION_FAVORITE, 4)
+        serviceScope.launch {
+            val book = playerStateRepository.getCurrentBook().first()
+            book?.let {
+                val playIntent = getServiceIntent(ACTION_PLAY, 0)
+                val pauseIntent = getServiceIntent(ACTION_PAUSE, 1)
+                val ffIntent = getServiceIntent(ACTION_FF, 2)
+                val frIntent = getServiceIntent(ACTION_FR, 3)
+//                val favoriteIntent = getServiceIntent(ACTION_FAVORITE, 4)
 
-            val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle(it.title)
-                .setContentText(it.author)
-                .setUsesChronometer(true)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setOngoing(true) // Keeps the notification visible
-                .setStyle(
-                    androidx.media.app.NotificationCompat.MediaStyle()
-                        .setMediaSession(mediaSession.sessionToken)
-                        .setShowActionsInCompactView(0, 1, 2, 3, 4) // Shows Play/Pause, FF, FR
-                )
+                val builder = NotificationCompat.Builder(this@PlayerService, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_launcher_foreground)
+                    .setContentTitle(it.title)
+                    .setContentText(it.author)
+                    .setUsesChronometer(true)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setOngoing(true) // Keeps the notification visible
+                    .setStyle(
+                        androidx.media.app.NotificationCompat.MediaStyle()
+                            .setMediaSession(mediaSession.sessionToken)
+                            .setShowActionsInCompactView(0, 1, 2, 3, 4) // Shows Play/Pause, FF, FR
+                    )
 
+                builder.addAction(R.drawable.ic_play, "Play", playIntent)
+                builder.addAction(R.drawable.ic_pause, "Pause", pauseIntent)
 
-            builder.addAction(R.drawable.ic_play, "Play", playIntent)
-            builder.addAction(R.drawable.ic_pause, "Pause", pauseIntent)
+//                builder.addAction(R.drawable.ic_bookmark, "Favorite", favoriteIntent)
+                builder.addAction(R.drawable.ic_ff, "Fast Forward", ffIntent)
+                builder.addAction(R.drawable.ic_fr, "Rewind", frIntent)
 
-//            builder.addAction(R.drawable.ic_bookmark, "Favorite", favoriteIntent)
-            builder.addAction(R.drawable.ic_ff, "Fast Forward", ffIntent)
-            builder.addAction(R.drawable.ic_fr, "Rewind", frIntent)
-
-            startForeground(NOTIFICATION_ID, builder.build())
+                startForeground(NOTIFICATION_ID, builder.build())
+            }
         }
     }
 
