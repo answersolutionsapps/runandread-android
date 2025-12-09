@@ -5,7 +5,7 @@
 [![Language](https://img.shields.io/badge/Language-Kotlin-blue.svg)](https://kotlinlang.org/)
 [![Version](https://img.shields.io/badge/Version-1.9-orange.svg)](https://play.google.com/store/apps/details?id=com.answersolutions.runandread)
 
-Ultimate Text-to-Speech Player for Android - Listen to your books while running, exercising, or on the go!
+Ultimate Text-to-Speech and Audiobook Player for Android - Listen to your books while running, exercising, or on the go!
 
 <img src="app/src/main/ic_launcher-playstore.png" width="100" height="100" alt="RunAndRead Logo">
 
@@ -27,7 +27,7 @@ RunAndRead is an Android application that converts text to speech, allowing you 
 - **MP3 Audiobook Support**: Listen to high-quality audiobooks generated using the RANDR pipeline
 
 
-**Download and try the app for free!**
+**Download and use the app for free!**
 
 ## Installation
 
