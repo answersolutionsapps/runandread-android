@@ -186,7 +186,7 @@ We welcome contributions from the community! Whether you're fixing bugs, adding 
 
 ## 📞 Contact
 
-- **[Sergey N](https://www.linkedin.com/in/sergey-neskoromny/)**
+- **[Sergey N](https://www.linkedin.com/in/sergey-neskoromny/)** - Connect and follow me on LinkedIn.
 
 ## License
 
