@@ -3,7 +3,6 @@ package com.answersolutions.runandread
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
@@ -31,6 +30,7 @@ import com.answersolutions.runandread.ui.theme.RunAndReadTheme
 import com.answersolutions.runandread.voice.VoiceSelectorViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.filterNotNull
+import androidx.core.net.toUri
 
 
 sealed class Screen(val route: String) {
@@ -154,7 +154,7 @@ class MainActivity : ComponentActivity() {
             context.startActivity(
                 Intent(
                     Intent.ACTION_VIEW,
-                    Uri.parse("market://details?id=$packageName")
+                    "market://details?id=$packageName".toUri()
                 ).apply {
                     setPackage("com.android.vending") // Ensure only Play Store handles it
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -164,7 +164,7 @@ class MainActivity : ComponentActivity() {
             context.startActivity(
                 Intent(
                     Intent.ACTION_VIEW,
-                    Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+                    "https://play.google.com/store/apps/details?id=$packageName".toUri()
                 ).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 })
@@ -172,7 +172,7 @@ class MainActivity : ComponentActivity() {
     }
 
     fun openExternalLink(url: String) {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
         startActivity(intent)
     }
 

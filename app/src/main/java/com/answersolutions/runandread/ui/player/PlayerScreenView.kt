@@ -81,10 +81,10 @@ fun PlayerScreenPreview() {
                     Bookmark(9, "Test 9"),
                     Bookmark(9, "Test 9")
                 ),
-                isSpeaking = true,
+                isSpeaking = false,
                 progressTime = "00:00",
-                progress = 100f,
-                totalTimeString = "00:00"
+                progress = 50f,
+                totalTimeString = "05:00"
             ),
             currentFrame = listOf("Test 1", "Test 2", "Test 3"),
             currentWordIndexInFrame = 1,

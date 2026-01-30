@@ -1,9 +1,11 @@
-# RunAndRead Android | [[iOS Version]](https://github.com/answersolutionsapps/runandread-ios) | [[Audiobook Pipeline]](https://github.com/sergenes/runandread-audiobook)
+# RunAndRead Android
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://www.android.com/)
 [![Language](https://img.shields.io/badge/Language-Kotlin-blue.svg)](https://kotlinlang.org/)
 [![Version](https://img.shields.io/badge/Version-1.9-orange.svg)](https://play.google.com/store/apps/details?id=com.answersolutions.runandread)
+
+**Related Projects:** [iOS Version](https://github.com/answersolutionsapps/runandread-ios) | [Audiobook Pipeline](https://github.com/sergenes/runandread-audiobook)
 
 Ultimate Text-to-Speech and Audiobook Player for Android - Listen to your books while running, exercising, or on the go!
 
@@ -26,22 +28,15 @@ RunAndRead is an Android application that converts text to speech, allowing you 
 - **Highlighting**: Follow along with highlighted text as it's being read
 - **MP3 Audiobook Support**: Listen to high-quality audiobooks generated using the RANDR pipeline
 
-
 **Download and use the app for free!**
 
 ## Installation
 
-### From App Store
-🍏 **App Store**: [RunAndRead for iOS](https://apps.apple.com/us/app/run-read-listen-on-the-go/id6741396289)
-### From Google Play
-🤖 **Google Play**: [RunAndRead for Android](https://play.google.com/store/apps/details?id=com.answersolutions.runandread)
+### Download from App Stores
 
+**iOS**: [RunAndRead for iOS](https://apps.apple.com/us/app/run-read-listen-on-the-go/id6741396289)
 
-📱 **Scan QR Codes to Download:**
-
-<div align="center">
-<img src="assets/apple_runandread_qr_code.png" width="150px"> &nbsp;&nbsp;&nbsp; <img src="assets/google_runandread_qr_code.png" width="150px">
-</div>
+**Android**: [RunAndRead for Android](https://play.google.com/store/apps/details?id=com.answersolutions.runandread)
 
 ### From Source
 
@@ -64,33 +59,33 @@ RunAndRead follows the MVVM (Model-View-ViewModel) architecture pattern and is b
 
 ```mermaid
 graph TB
-    subgraph "📱 UI Layer"
+    subgraph "UI Layer"
         UI[Jetpack Compose UI]
         VM[ViewModels]
     end
 
-    subgraph "🏗️ Domain Layer"
+    subgraph "Domain Layer"
         PUC[PlayerUseCase]
         BUC[BookmarkUseCase]
     end
 
-    subgraph "🎵 Player Layer"
+    subgraph "Player Layer"
         BP[BookPlayer Interface]
         ABP[AudioBookPlayer]
         SBP[SpeechBookPlayer]
     end
 
-    subgraph "🗣️ TTS Layer"
+    subgraph "TTS Layer"
         TTS[Text-to-Speech Engine]
     end
 
-    subgraph "💾 Data Layer"
+    subgraph "Data Layer"
         PSR[PlayerStateRepository]
         REPO[Other Repositories]
         DS[Data Sources]
     end
 
-    subgraph "⚙️ Service Layer"
+    subgraph "Service Layer"
         PS[Background Services]
     end
 
@@ -113,12 +108,12 @@ graph TB
 
 ### Key Architectural Features
 
-- **🏗️ Clean Architecture**: Separation of concerns with distinct layers
-- **🔄 MVVM Pattern**: Reactive UI with ViewModels managing state
-- **💉 Dependency Injection**: Hilt for clean dependency management
-- **🎯 Single Responsibility**: Each component has a focused purpose
-- **🧪 Testable Design**: Interfaces and dependency injection enable easy testing
-- **📱 Modern Android**: Built with Jetpack Compose and latest Android APIs
+- **Clean Architecture**: Separation of concerns with distinct layers
+- **MVVM Pattern**: Reactive UI with ViewModels managing state
+- **Dependency Injection**: Hilt for clean dependency management
+- **Single Responsibility**: Each component has a focused purpose
+- **Testable Design**: Interfaces and dependency injection enable easy testing
+- **Modern Android**: Built with Jetpack Compose and latest Android APIs
 
 For detailed architecture documentation with comprehensive diagrams, see [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
@@ -133,8 +128,9 @@ For detailed architecture documentation with comprehensive diagrams, see [ARCHIT
 - **Jetpack Navigation**: For in-app navigation
 - **DataStore**: For preferences storage
 
-## 📦 Dependencies
-[RunAndRead Audiobook](https://github.com/sergenes/runandread-audiobook) is an open-source project for generating high-quality audiobooks using models like **Zyphra/Zonos**, **Kokoro-82M**, and others.. 
+## Dependencies
+
+[RunAndRead Audiobook](https://github.com/sergenes/runandread-audiobook) is an open-source project for generating high-quality audiobooks using models like **Zyphra/Zonos**, **Kokoro-82M**, and others.
 
 For instructions on generating your own audiobooks using the RANDR pipeline, see the [RANDR documentation](https://github.com/sergenes/runandread-audiobook/blob/main/RANDR.md).
 
@@ -191,27 +187,14 @@ We welcome contributions from the community! Whether you're fixing bugs, adding 
 
 ### Areas for Contribution
 
-- 🐛 **Bug Fixes**: Check our [Issues](https://github.com/answersolutions/runandread-android/issues)
-- ✨ **New Features**: E-book format support, UI improvements, accessibility features
-- 📚 **Documentation**: Code comments, user guides, architecture documentation
-- 🧪 **Testing**: Unit tests, integration tests, UI tests
-- 🌍 **Localization**: Translations for different languages
-- ♿ **Accessibility**: Improving app accessibility for all users
+- **Bug Fixes**: Check our [Issues](https://github.com/answersolutions/runandread-android/issues)
+- **New Features**: E-book format support, UI improvements, accessibility features
+- **Documentation**: Code comments, user guides, architecture documentation
+- **Testing**: Unit tests, integration tests, UI tests
+- **Localization**: Translations for different languages
+- **Accessibility**: Improving app accessibility for all users
 
-
-### Tag the release
-   - After successful upload, tag the main branch to mark the release:
-     ```
-     git tag "x.y.z(build)" 
-     git push origin "x.y.z(build)"
-     ```
-   - Example for version 1.9, build 10:
-     ```bash
-     git tag "1.9(10)"
-     git push origin "1.9(10)"
-     ```
-
-## 📞 Contact
+## Contact
 
 - **[Sergey N](https://www.linkedin.com/in/sergey-neskoromny/)** - Connect and follow me on LinkedIn.
 
