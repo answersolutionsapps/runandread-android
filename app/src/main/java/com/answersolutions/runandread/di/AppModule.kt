@@ -11,7 +11,13 @@ import com.answersolutions.runandread.data.datasource.VoiceDataSource
 import com.answersolutions.runandread.data.repository.EBookRepository
 import com.answersolutions.runandread.data.repository.LibraryRepository
 import com.answersolutions.runandread.data.repository.LibraryRepositoryImpl
+import com.answersolutions.runandread.data.repository.PlayerStateRepository
+import com.answersolutions.runandread.data.repository.PlayerStateRepositoryImpl
 import com.answersolutions.runandread.data.repository.VoiceRepository
+import com.answersolutions.runandread.domain.usecase.BookmarkUseCase
+import com.answersolutions.runandread.domain.usecase.BookmarkUseCaseImpl
+import com.answersolutions.runandread.domain.usecase.PlayerUseCase
+import com.answersolutions.runandread.domain.usecase.PlayerUseCaseImpl
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -79,4 +85,27 @@ object AppModule {
     @Provides
     fun providePrefsStore(@ApplicationContext context: Context): PrefsStore =
         PrefsStoreImpl(context)
+
+    @Provides
+    @Singleton
+    fun providePlayerStateRepository(): PlayerStateRepository {
+        return PlayerStateRepositoryImpl()
+    }
+
+    @Provides
+    @Singleton
+    fun providePlayerUseCase(
+        playerStateRepository: PlayerStateRepository,
+        libraryRepository: LibraryRepository
+    ): PlayerUseCase {
+        return PlayerUseCaseImpl(playerStateRepository, libraryRepository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideBookmarkUseCase(
+        playerStateRepository: PlayerStateRepository
+    ): BookmarkUseCase {
+        return BookmarkUseCaseImpl(playerStateRepository)
+    }
 }

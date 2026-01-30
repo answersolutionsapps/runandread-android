@@ -12,7 +12,12 @@ import com.answersolutions.runandread.data.model.Book
 import com.answersolutions.runandread.data.model.Bookmark
 import com.answersolutions.runandread.data.model.RunAndReadBook
 import com.answersolutions.runandread.data.repository.LibraryRepository
+import com.answersolutions.runandread.data.repository.PlayerStateRepository
 import com.answersolutions.runandread.data.repository.VoiceRepository
+import com.answersolutions.runandread.domain.usecase.BookmarkUseCase
+import com.answersolutions.runandread.domain.usecase.BookmarkUseCaseImpl
+import com.answersolutions.runandread.domain.usecase.PlayerUseCase
+import com.answersolutions.runandread.domain.usecase.PlayerUseCaseImpl
 import com.answersolutions.runandread.services.PlayerService
 import com.answersolutions.runandread.voice.SpeakingCallBack
 import com.answersolutions.runandread.voice.SpeechBookPlayer
@@ -94,7 +99,10 @@ object TextTimeRelationsTools {
 class PlayerViewModel @Inject constructor(
     @ApplicationContext private val application: Context,
     private val repository: VoiceRepository,
-    private val libraryRepository: LibraryRepository
+    private val libraryRepository: LibraryRepository,
+    private val playerUseCase: PlayerUseCase,
+    private val bookmarkUseCase: BookmarkUseCase,
+    private val playerStateRepository: PlayerStateRepository
 ) : ViewModel(), SpeakingCallBack {
 
     override var book: RunAndReadBook? = null
@@ -166,6 +174,16 @@ class PlayerViewModel @Inject constructor(
                         speakingCallback = this@PlayerViewModel
                     )
                 }
+
+                // Set player in use cases
+                player?.let { playerInstance ->
+                    (playerUseCase as PlayerUseCaseImpl).setBookPlayer(playerInstance)
+                    (bookmarkUseCase as BookmarkUseCaseImpl).setBookPlayer(playerInstance)
+                }
+
+                // Update repository state
+                playerStateRepository.setCurrentBook(book)
+
                 startPlaybackService()
             }
         }
@@ -174,22 +192,26 @@ class PlayerViewModel @Inject constructor(
 
     fun deleteBookmark(bookmark: Bookmark) {
         viewModelScope.launch {
-            player?.onDeleteBookmark(bookmark)
+            bookmarkUseCase.deleteBookmark(bookmark)
         }
     }
 
     fun playFromBookmark(position: Int) {
         viewModelScope.launch {
-            player?.onPlayFromBookmark(position)
+            bookmarkUseCase.playFromBookmark(position)
         }
     }
 
     fun onPause() {
-        player?.onStopSpeaking()
+        viewModelScope.launch {
+            playerUseCase.pause()
+        }
     }
 
     fun onPlay() {
-        player?.onPlay(source = 1)
+        viewModelScope.launch {
+            playerUseCase.play()
+        }
     }
 
 
@@ -202,17 +224,26 @@ class PlayerViewModel @Inject constructor(
 
     fun saveBookmark() {
         viewModelScope.launch {
-            player?.onSaveBookmark()
+            bookmarkUseCase.saveBookmark()
         }
     }
 
-    fun fastForward() = player?.onFastForward()
-    fun fastRewind() = player?.onRewind()
+    fun fastForward() {
+        viewModelScope.launch {
+            playerUseCase.fastForward()
+        }
+    }
+
+    fun fastRewind() {
+        viewModelScope.launch {
+            playerUseCase.fastRewind()
+        }
+    }
 
 
     fun onSliderValueChange(value: Float) {
         viewModelScope.launch {
-            player?.onUserChangePosition(value)
+            playerUseCase.seekTo(value.toLong())
         }
     }
 
@@ -262,15 +293,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun startPlaybackService() {
-        val intent =
-            Intent(application, PlayerService::class.java)
-        // TODO: Find a better solution - This static reference creates tight coupling between the ViewModel and Service,
-        // which violates clean architecture principles and can cause memory leaks if the ViewModel is not properly cleared.
-        // The service holds a direct reference to the ViewModel, making testing difficult and creating potential lifecycle issues.
-        // Better alternatives:
-        // 1) Use a Repository/UseCase pattern with dependency injection to share state,
-        // 2) Implement a proper communication mechanism using BroadcastReceiver or EventBus,
-        PlayerService.playerViewModel = this
+        val intent = Intent(application, PlayerService::class.java)
         ContextCompat.startForegroundService(application, intent)
     }
 
@@ -284,6 +307,6 @@ class PlayerViewModel @Inject constructor(
     var playbackProgressCallBack: (Long, Long, Boolean) -> Unit = { _, _, _ -> }
 
     fun currentTimeElapsed(): Long {
-        return player?.currentTimeElapsed() ?: 0
+        return (playerUseCase as PlayerUseCaseImpl).getCurrentTimeElapsed()
     }
 }
