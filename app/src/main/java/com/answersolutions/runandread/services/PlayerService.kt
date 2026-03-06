@@ -17,6 +17,7 @@ import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import com.answersolutions.runandread.R
 import com.answersolutions.runandread.data.repository.PlayerStateRepository
 import com.answersolutions.runandread.domain.usecase.BookmarkUseCase
@@ -111,6 +112,12 @@ class PlayerService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel()
+        mediaSession.release()
+    }
 
     private val mediaSessionCallback = object : MediaSessionCompat.Callback() {
         override fun onPlay() {

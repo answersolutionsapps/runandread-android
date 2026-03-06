@@ -15,9 +15,7 @@ import com.answersolutions.runandread.data.repository.LibraryRepository
 import com.answersolutions.runandread.data.repository.PlayerStateRepository
 import com.answersolutions.runandread.data.repository.VoiceRepository
 import com.answersolutions.runandread.domain.usecase.BookmarkUseCase
-import com.answersolutions.runandread.domain.usecase.BookmarkUseCaseImpl
 import com.answersolutions.runandread.domain.usecase.PlayerUseCase
-import com.answersolutions.runandread.domain.usecase.PlayerUseCaseImpl
 import com.answersolutions.runandread.services.PlayerService
 import com.answersolutions.runandread.voice.SpeakingCallBack
 import com.answersolutions.runandread.voice.SpeechBookPlayer
@@ -177,8 +175,8 @@ class PlayerViewModel @Inject constructor(
 
                 // Set player in use cases
                 player?.let { playerInstance ->
-                    (playerUseCase as PlayerUseCaseImpl).setBookPlayer(playerInstance)
-                    (bookmarkUseCase as BookmarkUseCaseImpl).setBookPlayer(playerInstance)
+                    playerUseCase.setBookPlayer(playerInstance)
+                    bookmarkUseCase.setBookPlayer(playerInstance)
                 }
 
                 // Update repository state
@@ -307,6 +305,6 @@ class PlayerViewModel @Inject constructor(
     var playbackProgressCallBack: (Long, Long, Boolean) -> Unit = { _, _, _ -> }
 
     fun currentTimeElapsed(): Long {
-        return (playerUseCase as PlayerUseCaseImpl).getCurrentTimeElapsed()
+        return playerUseCase.getCurrentTimeElapsed()
     }
 }

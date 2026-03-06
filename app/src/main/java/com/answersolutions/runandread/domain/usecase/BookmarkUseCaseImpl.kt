@@ -33,7 +33,7 @@ class BookmarkUseCaseImpl @Inject constructor(
         }
     }
     
-    fun setBookPlayer(player: BookPlayer) {
+    override fun setBookPlayer(player: BookPlayer) {
         this.bookPlayer = player
     }
 }

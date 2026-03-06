@@ -49,11 +49,11 @@ class PlayerUseCaseImpl @Inject constructor(
     override fun getPlaybackState(): Flow<PlaybackState> = 
         playerStateRepository.getPlaybackState()
     
-    fun setBookPlayer(player: BookPlayer) {
+    override fun setBookPlayer(player: BookPlayer) {
         this.bookPlayer = player
     }
-    
-    fun getCurrentTimeElapsed(): Long {
+
+    override fun getCurrentTimeElapsed(): Long {
         return bookPlayer?.currentTimeElapsed() ?: 0
     }
 }

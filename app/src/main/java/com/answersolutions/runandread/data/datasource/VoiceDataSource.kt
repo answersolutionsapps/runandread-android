@@ -47,6 +47,11 @@ class VoiceDataSource @Inject constructor(
                 textToSpeech = null
                 continuation.resume(availableVoices.map { it.toRunAndReadVoice() }.toSet())
             }
+            // Ensure TTS is shut down if the coroutine is cancelled before the engine initialises
+            continuation.invokeOnCancellation {
+                textToSpeech?.shutdown()
+                textToSpeech = null
+            }
         }
     }
 

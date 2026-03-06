@@ -1,5 +1,6 @@
 package com.answersolutions.runandread.domain.usecase
 
+import com.answersolutions.runandread.BookPlayer
 import com.answersolutions.runandread.data.repository.PlaybackState
 import kotlinx.coroutines.flow.Flow
 
@@ -11,4 +12,6 @@ interface PlayerUseCase {
     suspend fun seekTo(position: Long)
     fun getCurrentPosition(): Flow<Long>
     fun getPlaybackState(): Flow<PlaybackState>
+    fun setBookPlayer(player: BookPlayer)
+    fun getCurrentTimeElapsed(): Long
 }
