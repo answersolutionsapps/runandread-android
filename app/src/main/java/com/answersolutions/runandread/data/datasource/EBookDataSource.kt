@@ -55,7 +55,10 @@ class EBookDataSource @Inject constructor(
             // Unzip .randr file
             unzipFile(fileUri, extractionDirectory)
 
-            val extractedFiles = extractionDirectory.listFiles().first().listFiles() ?: throw IOException("Extraction failed")
+            val extractedFiles = extractionDirectory.listFiles()
+                ?.firstOrNull()
+                ?.listFiles()
+                ?: throw IOException("Extraction failed")
             val bookJsonFile = extractedFiles.find { it.name == "book.json" }
             val audioFile = extractedFiles.find { it.name == "audio.mp3" }
 
@@ -122,10 +125,16 @@ class EBookDataSource @Inject constructor(
 
     @Throws(IOException::class)
     fun unzipFile(zipFile: File, outputDir: File) {
+        val outputDirCanonical = outputDir.canonicalPath
         ZipInputStream(FileInputStream(zipFile)).use { zipInputStream ->
             var entry: ZipEntry? = zipInputStream.nextEntry
             while (entry != null) {
                 val outputFile = File(outputDir, entry.name)
+
+                // Guard against Zip Slip: reject entries that resolve outside outputDir
+                if (!outputFile.canonicalPath.startsWith(outputDirCanonical + File.separator)) {
+                    throw IOException("Zip Slip detected: illegal entry path '${entry.name}'")
+                }
 
                 if (entry.isDirectory) {
                     outputFile.mkdirs()

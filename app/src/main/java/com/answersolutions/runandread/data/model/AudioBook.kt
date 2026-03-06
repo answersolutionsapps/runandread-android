@@ -2,6 +2,7 @@ package com.answersolutions.runandread.data.model
 
 import com.answersolutions.extensions.formatSecondsToHMS
 import com.answersolutions.runandread.voice.languageId
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -51,6 +52,7 @@ data class AudioBook(
                 )
                 completion()
             }
+            coroutineScope.cancel()
         }
     }
 

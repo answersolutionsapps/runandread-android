@@ -17,6 +17,7 @@ import com.answersolutions.runandread.ui.player.TextTimeRelationsTools.getCurren
 import com.answersolutions.runandread.ui.player.TextTimeRelationsTools.getCurrentWordIndex
 import com.answersolutions.runandread.voice.SpeakingCallBack
 import timber.log.Timber
+import androidx.core.net.toUri
 
 class AudioBookPlayer(
     context: Context,
@@ -38,7 +39,7 @@ class AudioBookPlayer(
         val book = speakingCallback.book as AudioBook
         mediaPlayer = ExoPlayer.Builder(context).build().apply {
             val player = this
-            val mediaItem = MediaItem.fromUri(Uri.parse(book.audioFilePath))
+            val mediaItem = MediaItem.fromUri(book.audioFilePath.toUri())
             setMediaItem(mediaItem)
             prepare()
             pause()
@@ -140,11 +141,11 @@ class AudioBookPlayer(
     }
 
     override fun onStopSpeaking() {
+        handler.removeCallbacksAndMessages(null) // Always clear pending progress callbacks
         mediaPlayer?.takeIf { this@AudioBookPlayer.isPlaying }?.apply {
             pause()
             this@AudioBookPlayer.isPlaying = false
             speakingCallback.onStop()
-            handler.removeCallbacksAndMessages(null) // Stop progress updates
         }
     }
 
@@ -171,7 +172,7 @@ class AudioBookPlayer(
         mediaPlayer?.apply {
             pause()
             playOnReady = true
-            val newPosition = (currentPosition - (SEEK_STEP_AUDIO * 1000L)).coerceAtMost(duration)
+            val newPosition = (currentPosition - (SEEK_STEP_AUDIO * 1000L)).coerceAtLeast(0L)
             seekTo(newPosition)
         }
     }
