@@ -5,7 +5,7 @@
 [![Language](https://img.shields.io/badge/Language-Kotlin-blue.svg)](https://kotlinlang.org/)
 [![Version](https://img.shields.io/badge/Version-1.9-orange.svg)](https://play.google.com/store/apps/details?id=com.answersolutions.runandread)
 
-**Related Projects:** [iOS Version](https://github.com/answersolutionsapps/runandread-ios) | [Audiobook Pipeline](https://github.com/sergenes/runandread-audiobook)
+**Related Projects:** [Run&Read Studio](https://github.com/sergenes/runandread-studio) | [iOS Version](https://github.com/answersolutionsapps/runandread-ios) | [Audiobook Pipeline](https://github.com/sergenes/runandread-audiobook)
 
 Ultimate Text-to-Speech and Audiobook Player for Android - Listen to your books while running, exercising, or on the go!
 
