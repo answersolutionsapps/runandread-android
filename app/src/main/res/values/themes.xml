@@ -2,7 +2,6 @@
 <resources >
     <style name="Theme.RunAndRead" parent="android:Theme.Material.Light.NoActionBar" >
         <item name="colorPrimary">@color/primary</item>
-        <item name="android:statusBarColor" >@color/primary</item>
 <!--        <item name="android:windowDisablePreview">false</item>-->
         <item name="android:windowBackground">@color/background_launcher</item>
     </style>
